@@ -1,0 +1,11 @@
+venv/
+build/
+*.charm
+opentelemetry-collector-operator/.tox/
+.coverage
+__pycache__/
+*.py[cod]
+.idea
+.vscode/
+cos-tool*
+version
