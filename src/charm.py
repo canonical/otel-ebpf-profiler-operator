@@ -116,10 +116,9 @@ class OtlpEbpfProfilerCharm(ops.CharmBase):
             [config_manager.hash()]
         )
         if current_hash != old_hash:
+            # TODO: consider sending SIGHUP to otelcol svc to have it hot-reload any config changes instead of snap-restarting.
             self.snap().restart()
         hash_file.write_text(current_hash)
-
-        # TODO: send SIGHUP to otelcol svc to have it hot-reload any config changes.
 
     def snap(self)-> snap.Snap:
         """Return the snap object.
@@ -130,6 +129,7 @@ class OtlpEbpfProfilerCharm(ops.CharmBase):
         return snap.SnapCache()[self._snap_name]
 
     def _on_collect_unit_status(self, e: ops.CollectStatusEvent):
+        # TODO: notify the user if there's no profiling relation
         e.add_status(ops.ActiveStatus(""))
 
 
