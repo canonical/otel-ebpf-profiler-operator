@@ -100,11 +100,25 @@ class OtlpEbpfProfilerCharm(ops.CharmBase):
         LocalPath(CONFIG_FILE).unlink(missing_ok=True)
 
     def _reconcile(self):
-        cfg_mgr = ConfigManager()
+        config_manager = ConfigManager()
         # TODO: if profiling integration:
-        #  call cfg_mgr.add_profile_forwarding(otlp_grpc_endpoints)
-        config = cfg_mgr.build()
+        #  call config_manager.add_profile_forwarding(otlp_grpc_endpoints)
+        config = config_manager.build()
         LocalPath(CONFIG_FILE).write_text(config)
+
+        # If the config file or any cert has changed, a change in the hash
+        # will trigger a restart
+        hash_file = LocalPath("/opt/otlp_ebpf_profiler_reload")
+        old_hash = ""
+        if hash_file.exists():
+            old_hash = hash_file.read_text()
+        current_hash = ",".join(
+            [config_manager.hash()]
+        )
+        if current_hash != old_hash:
+            self.snap().restart()
+        hash_file.write_text(current_hash)
+
         # TODO: send SIGHUP to otelcol svc to have it hot-reload any config changes.
 
     def snap(self)-> snap.Snap:

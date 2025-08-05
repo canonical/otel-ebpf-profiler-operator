@@ -110,6 +110,10 @@ class ConfigBuilder:
         self._exporter_skip_verify = exporter_skip_verify
         self.add_default_config()
 
+    def hash(self):
+        """Return the config as a SHA256 hash."""
+        return sha256(yaml.safe_dump(self.build()))
+
     def build(self) -> str:
         """Build the final configuration and return it as a YAML string.
 

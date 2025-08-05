@@ -41,6 +41,11 @@ class ConfigManager:
         """Return the built config."""
         return self._config.build()
 
+    def hash(self):
+        """Return the current config hash."""
+        return self._config.hash()
+
+
     def add_profile_forwarding(self, endpoints: List[str], tls:bool=False):
         """Configure forwarding profiles to a profiling backend (Pyroscope)."""
         for idx, endpoint in enumerate(endpoints):
