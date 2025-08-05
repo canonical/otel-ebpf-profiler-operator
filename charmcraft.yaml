@@ -4,7 +4,7 @@
 # This file configures Charmcraft.
 # See https://juju.is/docs/sdk/charmcraft-config for guidance.
 
-name: otlp-ebpf-profiler
+name: otel-ebpf-profiler
 type: charm
 
 summary: eBPF-powered, system-wide CPU profiler.

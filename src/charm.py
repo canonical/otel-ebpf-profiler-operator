@@ -5,10 +5,13 @@
 
 import logging
 import subprocess
-from typing import  Final
 
 import ops
 from charmlibs.pathops import LocalPath
+
+from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
+from config_manager import ConfigManager
+from constants import SERVER_CERT_PATH, SERVER_CERT_PRIVATE_KEY_PATH, CONFIG_FILE
 from lib.charms.operator_libs_linux.v2 import snap
 from ops.model import MaintenanceStatus
 
@@ -21,16 +24,11 @@ from snap_management import (
 
 logger = logging.getLogger(__name__)
 
-SERVER_CERT_PATH: Final[str] = (
-    "/usr/local/share/ca-certificates/juju_tls-certificates/otlp_ebpf_profiler-server.crt"
-)
-SERVER_CERT_PRIVATE_KEY_PATH: Final[str] = "/etc/otlp_ebpf_profiler/private.key"
-
 
 def is_tls_ready() -> bool:
     """Return True if the server cert and private key are present on disk."""
     return (
-        LocalPath(SERVER_CERT_PATH).exists() and LocalPath(SERVER_CERT_PRIVATE_KEY_PATH).exists()
+            LocalPath(SERVER_CERT_PATH).exists() and LocalPath(SERVER_CERT_PRIVATE_KEY_PATH).exists()
     )
 
 
@@ -41,7 +39,7 @@ def refresh_certs():
 
 class OtlpEbpfProfilerCharm(ops.CharmBase):
     """Charm the service."""
-    _snap_name = "otlp-ebpf-profiler"
+    _snap_name = "opentelemetry-collector-ebpf-profiler"
 
     def __init__(self, framework: ops.Framework):
         super().__init__(framework)
@@ -49,6 +47,9 @@ class OtlpEbpfProfilerCharm(ops.CharmBase):
         if not self.unit.is_leader():
             self.unit.status = ops.BlockedStatus("This charm doesn't support being scaled.")
             return
+
+        # TODO add profiling integration with:
+        #   self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations['profiling'])
 
         # we split events in three categories:
         # events on which we need to setup things
@@ -90,15 +91,21 @@ class OtlpEbpfProfilerCharm(ops.CharmBase):
             raise SnapServiceError(f"Failed to start {self._snap_name}") from e
 
     def _teardown(self):
-        """Remove the snap."""
+        """Remove the snap and the config file."""
         self.unit.status = MaintenanceStatus(f"Uninstalling {self._snap_name} snap")
         try:
             self.snap().ensure(state=snap.SnapState.Absent)
         except (snap.SnapError, SnapSpecError) as e:
             raise SnapInstallError(f"Failed to uninstall {self._snap_name}") from e
+        LocalPath(CONFIG_FILE).unlink(missing_ok=True)
 
     def _reconcile(self):
-        pass
+        cfg_mgr = ConfigManager()
+        # TODO: if profiling integration:
+        #  call cfg_mgr.add_profile_forwarding(otlp_grpc_endpoints)
+        config = cfg_mgr.build()
+        LocalPath(CONFIG_FILE).write_text(config)
+        # TODO: send SIGHUP to otelcol svc to have it hot-reload any config changes.
 
     def snap(self)-> snap.Snap:
         """Return the snap object.
@@ -107,7 +114,6 @@ class OtlpEbpfProfilerCharm(ops.CharmBase):
         calls to snapd until they're actually needed.
         """
         return snap.SnapCache()[self._snap_name]
-
 
     def _on_collect_unit_status(self, e: ops.CollectStatusEvent):
         e.add_status(ops.ActiveStatus(""))
