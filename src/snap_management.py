@@ -7,13 +7,18 @@ Modified from https://github.com/canonical/k8s-operator/blob/main/charms/worker/
 
 import logging
 import platform
-from typing import Dict, Optional, Set
+import shlex
+import subprocess
+from pathlib import Path
+from typing import Dict, Optional, Set, Final
 
 import charms.operator_libs_linux.v2.snap as snap_lib
 from charms.operator_libs_linux.v2.snap import JSONAble
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
+CONFIG_PATH: Final[Path] = Path("/etc/otelcol-ebpf-profiler/config.yaml")
+HASH_LOCK_PATH: Final[Path] = Path("/opt/otlp_ebpf_profiler_reload")
 
 def get_system_arch() -> str:
     """Returns the architecture of this machine, mapping some values to amd64 or arm64.
@@ -40,7 +45,7 @@ class SnapMap:
     """
 
     snap_maps = {
-        "otlp-ebpf-profiler": {
+        "otel-ebpf-profiler": {
             # (confinement, arch): revision
             ("strict", "amd64"): 1, # FIXME: put here actual revisions
         },
@@ -72,6 +77,10 @@ class SnapError(Exception):
 
 class SnapInstallError(SnapError):
     """Raised when there's an error installing a snap."""
+
+
+class ConfigReloadError(SnapError):
+    """Raised when there's an error reloading the snap config."""
 
 
 class SnapServiceError(SnapError):
@@ -118,10 +127,53 @@ def install_snap(
     cache = snap_lib.SnapCache()
     snap = cache[snap_name]
     snap.ensure(state=snap_lib.SnapState.Present, revision=str(revision), classic=classic)
-    log.info(
+    logger.info(
         f"{snap_name} snap has been installed at revision={revision}"
         f" with confinement={'classic' if classic else 'strict'}"
     )
     if config:
         snap.set(config)
     snap.hold()
+
+
+def cleanup_config():
+    """Remove config file and hash lockfile."""
+    logger.info("Cleaning up snap config")
+    CONFIG_PATH.unlink(missing_ok=True)
+    HASH_LOCK_PATH.unlink(missing_ok=True)
+
+
+def _write_config( config: str, hash:str):
+    """Write config file and its hash."""
+    logger.info("Updating snap config")
+
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_PATH.write_text(config)
+
+    HASH_LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+    HASH_LOCK_PATH.write_text(hash)
+
+
+def update_config(new_config: str, new_hash: str) -> bool:
+    """Check whether the config has changed; if so update it on disk."""
+    old_hash = ""
+    if HASH_LOCK_PATH.exists():
+        old_hash = HASH_LOCK_PATH.read_text()
+    if new_hash != old_hash:
+        _write_config(new_config, new_hash)
+        return True
+    return False
+
+
+def reload(snap_name:str, service_name:str):
+    """Send a SIGHUP to the snap service to trigger a hot-reload of a (changed) config file.
+
+    On failure, may raise ConfigReloadError.
+    """
+    cmd = f"sudo systemctl kill -s SIGHUP snap.{snap_name}.{service_name}.service"
+    logger.info("SIGHUPping %s.%s with '%s'", snap_name, service_name, cmd)
+    try:
+        subprocess.run(shlex.split(cmd))
+    except subprocess.CalledProcessError:
+        logger.error("error running: '%s'", cmd)
+        raise ConfigReloadError("error reloading config")

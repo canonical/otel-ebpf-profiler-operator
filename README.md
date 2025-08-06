@@ -1,3 +1,3 @@
-# otlp-ebpf-profiler-operator
+# otel-ebpf-profiler-operator
 
-Deploys and operates https://github.com/canonical/opentelemetry-collector-ebpf-profiler-snap on machine Juju models.
+Deploys and operates https://github.com/canonical/otel-ebpf-profiler-snap on machine Juju models.

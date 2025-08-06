@@ -1,6 +1,7 @@
 """Helper module to build the configuration for OpenTelemetry Collector."""
 
 import logging
+from collections import namedtuple
 from typing import List
 
 
@@ -8,6 +9,7 @@ from config_builder import Component, ConfigBuilder
 
 logger = logging.getLogger(__name__)
 
+Config = namedtuple("Config", "config, hash")
 
 class ConfigManager:
     """High-level configuration manager for OpenTelemetry Collector.
@@ -37,14 +39,10 @@ class ConfigManager:
             exporter_skip_verify=insecure_skip_verify,
         )
 
-    def build(self):
+    def build(self) -> Config:
         """Return the built config."""
-        return self._config.build()
-
-    def hash(self):
-        """Return the current config hash."""
-        return self._config.hash()
-
+        cfg = self._config.build()
+        return Config(cfg, self._config.hash(cfg))
 
     def add_profile_forwarding(self, endpoints: List[str], tls:bool=False):
         """Configure forwarding profiles to a profiling backend (Pyroscope)."""

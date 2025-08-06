@@ -6,7 +6,7 @@ settings:
     not_planned: rejected
     
   components:
-    - otlp-ebpf-profiler
+    - otel-ebpf-profiler
 
   add_gh_comment: false
   sync_description: false

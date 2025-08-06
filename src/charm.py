@@ -9,18 +9,13 @@ import subprocess
 import ops
 from charmlibs.pathops import LocalPath
 
-from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
+# from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
+from charms.operator_libs_linux.v2 import snap
 from config_manager import ConfigManager
-from constants import SERVER_CERT_PATH, SERVER_CERT_PRIVATE_KEY_PATH, CONFIG_FILE
-from lib.charms.operator_libs_linux.v2 import snap
+from constants import SERVER_CERT_PATH, SERVER_CERT_PRIVATE_KEY_PATH
 from ops.model import MaintenanceStatus
 
-from snap_management import (
-    SnapInstallError,
-    SnapServiceError,
-    SnapSpecError,
-    install_snap,
-)
+import snap_management
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +34,8 @@ def refresh_certs():
 
 class OtlpEbpfProfilerCharm(ops.CharmBase):
     """Charm the service."""
-    _snap_name = "opentelemetry-collector-ebpf-profiler"
+    _snap_name = "otel-ebpf-profiler"
+    _service_name = "otel-ebpf-profiler"
 
     def __init__(self, framework: ops.Framework):
         super().__init__(framework)
@@ -52,12 +48,12 @@ class OtlpEbpfProfilerCharm(ops.CharmBase):
         #   self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations['profiling'])
 
         # we split events in three categories:
-        # events on which we need to setup things
+        # events on which we need to set up things
         for setup_evt in (self.on.upgrade_charm, self.on.install):
             framework.observe(setup_evt, self._on_setup_evt)
 
         # events on which we need to remove things
-        for teardown_evt in (self.on.upgrade_charm, self.on.install):
+        for teardown_evt in (self.on.stop, self.on.remove):
             framework.observe(teardown_evt, self._on_teardown_evt)
 
         # events on which we may need to configure things
@@ -82,43 +78,36 @@ class OtlpEbpfProfilerCharm(ops.CharmBase):
     def _setup(self):
         """Install the snap."""
         self.unit.status = MaintenanceStatus(f"Installing {self._snap_name} snap")
-        install_snap(self._snap_name)
+        # for now we have to install it manually
+        snap_management.install_snap(self._snap_name)
         # Start the snap
         self.unit.status = MaintenanceStatus(f"Starting {self._snap_name} snap")
         try:
             self.snap().start(enable=True)
         except snap.SnapError as e:
-            raise SnapServiceError(f"Failed to start {self._snap_name}") from e
+            raise snap_management.SnapServiceError(f"Failed to start {self._snap_name}") from e
 
     def _teardown(self):
         """Remove the snap and the config file."""
         self.unit.status = MaintenanceStatus(f"Uninstalling {self._snap_name} snap")
         try:
             self.snap().ensure(state=snap.SnapState.Absent)
-        except (snap.SnapError, SnapSpecError) as e:
-            raise SnapInstallError(f"Failed to uninstall {self._snap_name}") from e
-        LocalPath(CONFIG_FILE).unlink(missing_ok=True)
+        except (snap.SnapError, snap_management.SnapSpecError) as e:
+            raise snap_management.SnapInstallError(f"Failed to uninstall {self._snap_name}") from e
+        snap_management.cleanup_config()
 
     def _reconcile(self):
         config_manager = ConfigManager()
         # TODO: if profiling integration:
         #  call config_manager.add_profile_forwarding(otlp_grpc_endpoints)
-        config = config_manager.build()
-        LocalPath(CONFIG_FILE).write_text(config)
 
         # If the config file or any cert has changed, a change in the hash
         # will trigger a restart
-        hash_file = LocalPath("/opt/otlp_ebpf_profiler_reload")
-        old_hash = ""
-        if hash_file.exists():
-            old_hash = hash_file.read_text()
-        current_hash = ",".join(
-            [config_manager.hash()]
-        )
-        if current_hash != old_hash:
-            # TODO: consider sending SIGHUP to otelcol svc to have it hot-reload any config changes instead of snap-restarting.
-            self.snap().restart()
-        hash_file.write_text(current_hash)
+        config = config_manager.build()
+        if snap_management.update_config(config.config, config.hash):
+            self.unit.status = MaintenanceStatus("Reloading snap config")
+            # this may raise; let the charm go to error state
+            snap_management.reload(self._snap_name, self._service_name)
 
     def snap(self)-> snap.Snap:
         """Return the snap object.
