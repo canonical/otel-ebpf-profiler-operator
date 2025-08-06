@@ -9,7 +9,7 @@ from charm import OtlpEbpfProfilerCharm
 
 SnapMocks = namedtuple("SnapMocks", "charm_snap, snap_mgmt")
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def snap_mocks():
     with (
         patch.object(OtlpEbpfProfilerCharm, "snap", MagicMock()) as snapmock,

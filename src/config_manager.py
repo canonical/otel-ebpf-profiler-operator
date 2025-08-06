@@ -2,7 +2,7 @@
 
 import logging
 from collections import namedtuple
-from typing import List
+from typing import List, Dict
 
 
 from config_builder import Component, ConfigBuilder
@@ -12,13 +12,7 @@ logger = logging.getLogger(__name__)
 Config = namedtuple("Config", "config, hash")
 
 class ConfigManager:
-    """High-level configuration manager for OpenTelemetry Collector.
-
-    This class provides a simplified interface for configuring the OpenTelemetry
-    Collector by abstracting away the low-level details of the configuration format.
-    It builds on top of the ConfigBuilder class to provide feature-oriented
-    methods for common configuration scenarios.
-    """
+    """Configuration manager for OpenTelemetry Collector."""
 
     def __init__(
         self,
@@ -34,15 +28,19 @@ class ConfigManager:
             insecure_skip_verify: value for `insecure_skip_verify` in all exporters
         """
         self._insecure_skip_verify = insecure_skip_verify
-        self._config =ConfigBuilder(
+        self._config = ConfigBuilder(
             receiver_tls=receiver_tls,
             exporter_skip_verify=insecure_skip_verify,
         )
 
     def build(self) -> Config:
-        """Return the built config."""
+        """Return the built config and its hash."""
         cfg = self._config.build()
         return Config(cfg, self._config.hash(cfg))
+
+    def add_topology_labels(self, topology_labels: Dict[str,str]):
+        """Inject juju topology labels on the profile pipeline."""
+        self._config.inject_topology_labels(topology_labels)
 
     def add_profile_forwarding(self, endpoints: List[str], tls:bool=False):
         """Configure forwarding profiles to a profiling backend (Pyroscope)."""

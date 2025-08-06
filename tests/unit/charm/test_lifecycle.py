@@ -6,9 +6,6 @@ import pytest
 from charm import OtlpEbpfProfilerCharm
 from charms.operator_libs_linux.v2 import snap
 
-# autouse the snap_mocks fixture in this whole module
-pytestmark = pytest.mark.usefixtures("snap_mocks")
-
 @pytest.mark.parametrize("event", (CharmEvents.upgrade_charm(), CharmEvents.install(), CharmEvents.update_status(), CharmEvents.install()))
 def test_blocked_if_not_leader(ctx, event, snap_mocks):
     # GIVEN the unit is not leader

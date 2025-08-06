@@ -11,6 +11,7 @@ from constants import SERVER_CERT_PATH, SERVER_CERT_PRIVATE_KEY_PATH
 
 logger = logging.getLogger(__name__)
 
+TOPOLOGY_INJECTOR_PROCESSOR_NAME = "resource/profiling-topology-injector"
 
 def sha256(hashable: Union[str, bytes]) -> str:
     """Generate a SHA-256 hash of the input.
@@ -27,29 +28,6 @@ def sha256(hashable: Union[str, bytes]) -> str:
     if isinstance(hashable, str):
         hashable = hashable.encode("utf-8")
     return hashlib.sha256(hashable).hexdigest()
-
-
-@unique
-class Port(int, Enum):
-    """Ports used by the OpenTelemetry Collector."""
-    loki_http = 3500
-    """HTTP endpoint for Loki log ingestion."""
-    otlp_grpc = 4317
-    """gRPC endpoint for OTLP protocol"""
-    otlp_http = 4318
-    """HTTP endpoint for OTLP protocol"""
-    metrics = 8888
-    """Endpoint for Prometheus metrics scraping"""
-    health = 13133
-    """Health check endpoint"""
-    # Tracing
-    jaeger_grpc = 14250
-    """gRPC endpoint for Jaeger protocol"""
-    jaeger_thrift_http = 14268
-    """HTTP endpoint for Jaeger Thrift protocol"""
-    zipkin = 9411
-    """HTTP endpoint for Zipkin protocol"""
-
 
 @unique
 class Component(str, Enum):
@@ -131,6 +109,16 @@ class ConfigBuilder:
             self._add_tls_to_all_receivers()
         self._add_exporter_insecure_skip_verify(self._exporter_skip_verify)
         return yaml.safe_dump(self._config)
+
+    def inject_topology_labels(self, topology_labels:dict):
+        """Inject jujutopology into the emitted profiles."""
+        self.add_component(
+                Component.processor,
+                TOPOLOGY_INJECTOR_PROCESSOR_NAME,
+                config={"attributes":[{"action": "insert", "key": key, "value": value} for key, value in topology_labels.items()]},
+                pipelines=['profiles']
+            )
+
 
     def add_default_config(self):
         """Return the default config for OpenTelemetry Collector."""
