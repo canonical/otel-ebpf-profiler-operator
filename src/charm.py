@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
-"""A Juju charm for OpenTelemetry Collector on machines."""
+"""A Juju charm for OpenTelemetry eBPF Profiler on machines."""
 
 import logging
 import os
@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class OtelEbpfProfilerCharm(ops.CharmBase):
     """Charm the service."""
+
     _snap_name = "otel-ebpf-profiler"
     _service_name = "otel-ebpf-profiler"
 
@@ -53,15 +54,14 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
 
         framework.observe(self.on.collect_unit_status, self._on_collect_unit_status)
 
-
     # event handlers
-    def _on_setup_evt(self, _:ops.EventBase):
+    def _on_setup_evt(self, _: ops.EventBase):
         self._setup()
 
-    def _on_teardown_evt(self, _:ops.EventBase):
+    def _on_teardown_evt(self, _: ops.EventBase):
         self._teardown()
 
-    def _on_maintenance_evt(self, _:ops.EventBase):
+    def _on_maintenance_evt(self, _: ops.EventBase):
         self._reconcile()
 
     # lifecycle managers
@@ -91,15 +91,14 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
         # TODO: if profiling integration:
         #  call config_manager.add_profile_forwarding(otlp_grpc_endpoints)
 
-        # If the config file or any cert has changed, a change in the hash
-        # will trigger a restart
+        # If the config file hash has changed, restart the snap
         config = config_manager.build()
         if snap_management.update_config(config.config, config.hash):
             self.unit.status = MaintenanceStatus("Reloading snap config")
             # this may raise; let the charm go to error state
             snap_management.reload(self._snap_name, self._service_name)
 
-    def snap(self)-> snap.Snap:
+    def snap(self) -> snap.Snap:
         """Return the snap object.
 
         This method provides lazy initialization of snap objects, avoiding unnecessary
@@ -114,8 +113,6 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
         machine_id = os.getenv("JUJU_MACHINE_ID", "<testing>")
         # signal that this profiler instance owns an exclusive lock for profiling this machine
         e.add_status(ops.ActiveStatus(f"profiling machine {machine_id}"))
-
-
 
 
 if __name__ == "__main__":  # pragma: nocover

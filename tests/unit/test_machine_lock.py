@@ -12,7 +12,7 @@ def lock(request):
 
 @pytest.fixture(autouse=True)
 def lockfile(tmp_path):
-    pth = tmp_path/"machinelocktest.txt"
+    pth = tmp_path / "machinelocktest.txt"
     with patch.object(machine_lock, "MACHINE_LOCK_PATH", pth):
         yield pth
 
@@ -21,7 +21,7 @@ def test_lock_acquire(lock, lockfile):
     # GIVEN no lock
     assert not lockfile.exists()
     # WHEN we acquire it
-    acquired= lock.acquire()
+    acquired = lock.acquire()
     # THEN we have the lock
     assert acquired
     assert lockfile.read_text() == lock._fingerprint

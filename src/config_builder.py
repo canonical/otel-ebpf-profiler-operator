@@ -30,28 +30,6 @@ def sha256(hashable: Union[str, bytes]) -> str:
 
 
 @unique
-class Port(int, Enum):
-    """Ports used by the OpenTelemetry Collector."""
-    loki_http = 3500
-    """HTTP endpoint for Loki log ingestion."""
-    otlp_grpc = 4317
-    """gRPC endpoint for OTLP protocol"""
-    otlp_http = 4318
-    """HTTP endpoint for OTLP protocol"""
-    metrics = 8888
-    """Endpoint for Prometheus metrics scraping"""
-    health = 13133
-    """Health check endpoint"""
-    # Tracing
-    jaeger_grpc = 14250
-    """gRPC endpoint for Jaeger protocol"""
-    jaeger_thrift_http = 14268
-    """HTTP endpoint for Jaeger Thrift protocol"""
-    zipkin = 9411
-    """HTTP endpoint for Zipkin protocol"""
-
-
-@unique
 class Component(str, Enum):
     """Pipeline components of the OpenTelemetry Collector configuration.
 
@@ -111,7 +89,7 @@ class ConfigBuilder:
         self.add_default_config()
 
     @staticmethod
-    def hash(cfg:str):
+    def hash(cfg: str):
         """Return the config as a SHA256 hash."""
         return sha256(yaml.safe_dump(cfg))
 
@@ -134,8 +112,7 @@ class ConfigBuilder:
 
     def add_default_config(self):
         """Return the default config for OpenTelemetry Collector."""
-        # Currently, we always include the OTLP receiver to ensure the config is valid at all times.
-        # We also need these receivers for tracing.
+        # The default config enables the profiling receiver, which is the ebpf profiler.
         # There must be at least one pipeline, and it must have a valid receiver exporter pair.
         self.add_component(
             Component.receiver,

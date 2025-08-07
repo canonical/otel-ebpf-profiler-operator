@@ -17,8 +17,9 @@ from charms.operator_libs_linux.v2.snap import JSONAble
 
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH: Final[Path] = Path("/etc/otelcol-ebpf-profiler/config.yaml")
-HASH_LOCK_PATH: Final[Path] = Path("/opt/otlp_ebpf_profiler_reload")
+CONFIG_PATH: Final[Path] = Path("/etc/otel-ebpf-profiler/config.yaml")
+HASH_LOCK_PATH: Final[Path] = Path("/opt/otel_ebpf_profiler_reload")
+
 
 def get_system_arch() -> str:
     """Returns the architecture of this machine, mapping some values to amd64 or arm64.
@@ -47,7 +48,7 @@ class SnapMap:
     snap_maps = {
         "otel-ebpf-profiler": {
             # (confinement, arch): revision
-            ("strict", "amd64"): 1, # FIXME: put here actual revisions
+            ("strict", "amd64"): 1,  # FIXME: put here actual revisions
         },
     }
 
@@ -143,7 +144,7 @@ def cleanup_config():
     HASH_LOCK_PATH.unlink(missing_ok=True)
 
 
-def _write_config( config: str, hash:str):
+def _write_config(config: str, hash: str):
     """Write config file and its hash."""
     logger.info("Updating snap config")
 
@@ -165,7 +166,7 @@ def update_config(new_config: str, new_hash: str) -> bool:
     return False
 
 
-def reload(snap_name:str, service_name:str):
+def reload(snap_name: str, service_name: str):
     """Send a SIGHUP to the snap service to trigger a hot-reload of a (changed) config file.
 
     On failure, may raise ConfigReloadError.

@@ -9,16 +9,17 @@ class MachineLock:
 
     Used to ensure that only a single unit of a charm can 'own' a juju machine.
     """
-    def __init__(self, fingerprint:str):
-        self._fingerprint=fingerprint
+
+    def __init__(self, fingerprint: str):
+        self._fingerprint = fingerprint
 
     @property
     def _lockfile(self):
         return Path(MACHINE_LOCK_PATH)
 
-    def _get(self)->Optional[str]:
+    def _get(self) -> Optional[str]:
         """Get current lock owner, if any."""
-        file=self._lockfile
+        file = self._lockfile
         return file.read_text() if file.exists() else None
 
     def _set(self):
