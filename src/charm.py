@@ -5,8 +5,6 @@
 
 import logging
 import os
-import subprocess
-from pathlib import Path
 
 import cosl
 import ops
@@ -14,25 +12,12 @@ import ops
 # from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
 from charms.operator_libs_linux.v2 import snap
 from config_manager import ConfigManager
-from constants import SERVER_CERT_PATH, SERVER_CERT_PRIVATE_KEY_PATH
 from ops.model import MaintenanceStatus
 
 import snap_management
 from machine_lock import MachineLock
 
 logger = logging.getLogger(__name__)
-
-
-def is_tls_ready() -> bool:
-    """Return True if the server cert and private key are present on disk."""
-    return (
-            Path(SERVER_CERT_PATH).exists() and Path(SERVER_CERT_PRIVATE_KEY_PATH).exists()
-    )
-
-
-def refresh_certs():
-    """Run `update-ca-certificates` to refresh the trusted system certs."""
-    subprocess.run(["update-ca-certificates", "--fresh"], check=True)
 
 
 class OtelEbpfProfilerCharm(ops.CharmBase):
