@@ -32,7 +32,7 @@ def refresh_certs():
     subprocess.run(["update-ca-certificates", "--fresh"], check=True)
 
 
-class OtlpEbpfProfilerCharm(ops.CharmBase):
+class OtelEbpfProfilerCharm(ops.CharmBase):
     """Charm the service."""
     _snap_name = "otel-ebpf-profiler"
     _service_name = "otel-ebpf-profiler"
@@ -123,4 +123,4 @@ class OtlpEbpfProfilerCharm(ops.CharmBase):
 
 
 if __name__ == "__main__":  # pragma: nocover
-    ops.main(OtlpEbpfProfilerCharm)
+    ops.main(OtelEbpfProfilerCharm)

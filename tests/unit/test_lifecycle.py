@@ -3,7 +3,7 @@ import ops
 from ops.testing import State, CharmEvents
 import pytest
 
-from charm import OtlpEbpfProfilerCharm
+from charm import OtelEbpfProfilerCharm
 from charms.operator_libs_linux.v2 import snap
 
 # autouse the snap_mocks fixture in this whole module
@@ -43,7 +43,7 @@ def test_install_snap(ctx, event, snap_mocks):
     # WHEN we receive any event
     state_out = ctx.run(event, State(leader=True))
     # THEN the unit will install or start the snap
-    assert ops.MaintenanceStatus(f"Installing {OtlpEbpfProfilerCharm._snap_name} snap") in ctx.unit_status_history
+    assert ops.MaintenanceStatus(f"Installing {OtelEbpfProfilerCharm._snap_name} snap") in ctx.unit_status_history
     assert state_out.unit_status == ops.ActiveStatus()
     assert snap_mocks.snap_mgmt.install_snap.called
     assert snap_mocks.charm_snap.return_value.start.called
@@ -55,7 +55,7 @@ def test_remove_snap(ctx, event, snap_mocks):
     # WHEN we receive the stop/remove event
     state_out = ctx.run(event, State(leader=True))
     # THEN the unit will install or start the snap
-    assert ops.MaintenanceStatus(f"Uninstalling {OtlpEbpfProfilerCharm._snap_name} snap") in ctx.unit_status_history
+    assert ops.MaintenanceStatus(f"Uninstalling {OtelEbpfProfilerCharm._snap_name} snap") in ctx.unit_status_history
     assert state_out.unit_status == ops.ActiveStatus()
     assert snap_mocks.snap_mgmt.cleanup_config.called
     assert snap_mocks.charm_snap.return_value.ensure.called_with_args(state=snap.SnapState.Absent)
@@ -70,7 +70,7 @@ def test_config_reload(ctx, event, snap_mocks, changes):
     state_out = ctx.run(event, State(leader=True))
     # THEN we'll call update_config and reload if there are changes
     if changes:
-        assert snap_mocks.snap_mgmt.reload.called_with_args(OtlpEbpfProfilerCharm._snap_name, OtlpEbpfProfilerCharm._service_name)
+        assert snap_mocks.snap_mgmt.reload.called_with_args(OtelEbpfProfilerCharm._snap_name, OtelEbpfProfilerCharm._service_name)
         assert ops.MaintenanceStatus("Reloading snap config") in ctx.unit_status_history
     else:
         assert not snap_mocks.snap_mgmt.reload.called
