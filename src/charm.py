@@ -4,18 +4,22 @@
 """A Juju charm for OpenTelemetry Collector on machines."""
 
 import logging
+import os
 import subprocess
+from pathlib import Path
 
+import cosl
 import ops
 from charmlibs.pathops import LocalPath
 
 # from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
 from charms.operator_libs_linux.v2 import snap
 from config_manager import ConfigManager
-from constants import SERVER_CERT_PATH, SERVER_CERT_PRIVATE_KEY_PATH
+from constants import SERVER_CERT_PATH, SERVER_CERT_PRIVATE_KEY_PATH, MACHINE_LOCK_PATH
 from ops.model import MaintenanceStatus
 
 import snap_management
+from machine_lock import MachineLock
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +44,10 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
     def __init__(self, framework: ops.Framework):
         super().__init__(framework)
 
-        if not self.unit.is_leader():
-            self.unit.status = ops.BlockedStatus("This charm doesn't support being scaled.")
+        if not MachineLock(cosl.JujuTopology.from_charm(self).identifier).acquire():
+            self.unit.status = ops.BlockedStatus(
+                "Unable to run on this machine, is already being profiled by another instance."
+            )
             return
 
         # TODO add profiling integration with:
@@ -119,7 +125,13 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
 
     def _on_collect_unit_status(self, e: ops.CollectStatusEvent):
         # TODO: notify the user if there's no profiling relation
-        e.add_status(ops.ActiveStatus(""))
+
+        # assumption: if this is a testing env, the envvar won't be set
+        machine_id = os.getenv("JUJU_MACHINE_ID", "<testing>")
+        # signal that this profiler instance owns an exclusive lock for profiling this machine
+        e.add_status(ops.ActiveStatus(f"profiling machine {machine_id}"))
+
+
 
 
 if __name__ == "__main__":  # pragma: nocover
