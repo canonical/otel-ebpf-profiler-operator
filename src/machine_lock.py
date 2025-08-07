@@ -1,3 +1,5 @@
+"""Simple machine lock to ensure each juju machine can only be claimed by a single unit."""
+
 from pathlib import Path
 from typing import Optional
 
