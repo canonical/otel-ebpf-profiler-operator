@@ -23,7 +23,6 @@ class ConfigManager:
 
     def __init__(
         self,
-        receiver_tls: bool = False,
         insecure_skip_verify: bool = False,
     ):
         """Generate a default OpenTelemetry collector ConfigManager.
@@ -31,12 +30,10 @@ class ConfigManager:
         The base configuration is our opinionated default.
 
         Args:
-            receiver_tls: whether to inject TLS config in all receivers on build
             insecure_skip_verify: value for `insecure_skip_verify` in all exporters
         """
         self._insecure_skip_verify = insecure_skip_verify
         self._config = ConfigBuilder(
-            receiver_tls=receiver_tls,
             exporter_skip_verify=insecure_skip_verify,
         )
 
