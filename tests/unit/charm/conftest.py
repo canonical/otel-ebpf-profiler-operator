@@ -9,6 +9,14 @@ from charm import OtelEbpfProfilerCharm
 
 SnapMocks = namedtuple("SnapMocks", "charm_snap, snap_mgmt")
 
+
+@pytest.fixture(autouse=True)
+def mock_lockfile(tmp_path):
+    pth = tmp_path/"machinelocktest.txt"
+    with patch("machine_lock.MACHINE_LOCK_PATH", pth):
+        yield pth
+
+
 @pytest.fixture
 def snap_mocks():
     with (

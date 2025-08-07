@@ -10,12 +10,11 @@ from pathlib import Path
 
 import cosl
 import ops
-from charmlibs.pathops import LocalPath
 
 # from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
 from charms.operator_libs_linux.v2 import snap
 from config_manager import ConfigManager
-from constants import SERVER_CERT_PATH, SERVER_CERT_PRIVATE_KEY_PATH, MACHINE_LOCK_PATH
+from constants import SERVER_CERT_PATH, SERVER_CERT_PRIVATE_KEY_PATH
 from ops.model import MaintenanceStatus
 
 import snap_management
@@ -27,7 +26,7 @@ logger = logging.getLogger(__name__)
 def is_tls_ready() -> bool:
     """Return True if the server cert and private key are present on disk."""
     return (
-            LocalPath(SERVER_CERT_PATH).exists() and LocalPath(SERVER_CERT_PRIVATE_KEY_PATH).exists()
+            Path(SERVER_CERT_PATH).exists() and Path(SERVER_CERT_PRIVATE_KEY_PATH).exists()
     )
 
 

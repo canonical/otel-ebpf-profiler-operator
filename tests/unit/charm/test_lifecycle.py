@@ -10,8 +10,9 @@ from charms.operator_libs_linux.v2 import snap
 pytestmark = pytest.mark.usefixtures("snap_mocks")
 
 @pytest.mark.parametrize("event", (CharmEvents.upgrade_charm(), CharmEvents.install(), CharmEvents.update_status(), CharmEvents.install()))
-def test_blocked_if_not_leader(ctx, event, snap_mocks):
-    # GIVEN the unit is not leader
+def test_blocked_if_fails_acquire_machine_lock(ctx, event, snap_mocks, mock_lockfile):
+    # GIVEN the machine lock is taken
+    mock_lockfile.write_text("someone-else")
     # WHEN we receive any event
     state_out = ctx.run(event, State(leader=False))
     # THEN the unit sets blocked
@@ -19,8 +20,9 @@ def test_blocked_if_not_leader(ctx, event, snap_mocks):
 
 
 @pytest.mark.parametrize("event", (CharmEvents.upgrade_charm(), CharmEvents.install(), CharmEvents.update_status(), CharmEvents.install()))
-def test_snap_not_installed_if_not_leader(ctx, event, snap_mocks):
-    # GIVEN the unit is not leader
+def test_snap_not_installed_if_fails_acquire_machine_lock(ctx, event, snap_mocks, mock_lockfile):
+    # GIVEN the machine lock is taken
+    mock_lockfile.write_text("someone-else")
     # WHEN we receive any event
     ctx.run(event, State(leader=False))
     # THEN the unit won't attempt to install or start the snap
@@ -34,7 +36,7 @@ def test_smoke(ctx, event, snap_mocks):
     # WHEN we receive any event
     state_out = ctx.run(event, State(leader=True))
     # THEN the unit sets active
-    assert state_out.unit_status==ops.ActiveStatus()
+    assert state_out.unit_status==ops.ActiveStatus("profiling machine <testing>")
 
 
 @pytest.mark.parametrize("event", (CharmEvents.upgrade_charm(), CharmEvents.install()))
@@ -44,7 +46,7 @@ def test_install_snap(ctx, event, snap_mocks):
     state_out = ctx.run(event, State(leader=True))
     # THEN the unit will install or start the snap
     assert ops.MaintenanceStatus(f"Installing {OtelEbpfProfilerCharm._snap_name} snap") in ctx.unit_status_history
-    assert state_out.unit_status == ops.ActiveStatus()
+    assert state_out.unit_status == ops.ActiveStatus("profiling machine <testing>")
     assert snap_mocks.snap_mgmt.install_snap.called
     assert snap_mocks.charm_snap.return_value.start.called
 
@@ -56,7 +58,7 @@ def test_remove_snap(ctx, event, snap_mocks):
     state_out = ctx.run(event, State(leader=True))
     # THEN the unit will install or start the snap
     assert ops.MaintenanceStatus(f"Uninstalling {OtelEbpfProfilerCharm._snap_name} snap") in ctx.unit_status_history
-    assert state_out.unit_status == ops.ActiveStatus()
+    assert state_out.unit_status == ops.ActiveStatus("profiling machine <testing>")
     assert snap_mocks.snap_mgmt.cleanup_config.called
     assert snap_mocks.charm_snap.return_value.ensure.called_with_args(state=snap.SnapState.Absent)
 
@@ -75,7 +77,7 @@ def test_config_reload(ctx, event, snap_mocks, changes):
     else:
         assert not snap_mocks.snap_mgmt.reload.called
 
-    assert state_out.unit_status == ops.ActiveStatus()
+    assert state_out.unit_status == ops.ActiveStatus("profiling machine <testing>")
 
 
 
