@@ -7,15 +7,15 @@
 name: otel-ebpf-profiler
 type: charm
 
-summary: eBPF-powered, system-wide CPU profiler.
+summary: A whole-system, cross-language profiler for Linux via eBPF.
 description: |
-  eBPF-powered, system-wide CPU profiler.  
+  A whole-system, cross-language profiler for Linux via eBPF.  
 
 links:
   # documentation: https://discourse.charmhub.io/
-  website: https://charmhub.io/otlp-ebpf-profiler
-  source: https://github.com/canonical/otlp-ebpf-profiler-operator
-  issues: https://github.com/canonical/otlp-ebpf-profiler-operator/issues
+  website: https://charmhub.io/otel-ebpf-profiler
+  source: https://github.com/canonical/otel-ebpf-profiler-operator
+  issues: https://github.com/canonical/otel-ebpf-profiler-operator/issues
 
 assumes:
   - juju >= 3.6

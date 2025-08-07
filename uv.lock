@@ -833,7 +833,7 @@ wheels = [
 ]
 
 [[package]]
-name = "otlp-ebpf-profiler"
+name = "otel-ebpf-profiler"
 version = "0.0"
 source = { virtual = "." }
 dependencies = [
