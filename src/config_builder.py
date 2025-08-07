@@ -2,12 +2,10 @@
 
 import hashlib
 import logging
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from enum import Enum, unique
 
 import yaml
-
-from constants import SERVER_CERT_PATH, SERVER_CERT_PRIVATE_KEY_PATH
 
 logger = logging.getLogger(__name__)
 
