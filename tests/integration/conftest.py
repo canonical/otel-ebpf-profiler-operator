@@ -26,7 +26,7 @@ def charm():
 def sideload_snap(juju, tmp_path, unit_name):
     # FIXME: https://github.com/canonical/otel-ebpf-profiler-operator/issues/3
     if snap_path := os.getenv("SNAP_PATH"):
-        step = f"juju scp {snap_path} {unit_name}:otel-ebpf-profiler.snap"
+        step = f"juju scp -m {juju.model} {snap_path} {unit_name}:/home/ubuntu/otel-ebpf-profiler.snap"
         logger.info(step)
         subprocess.run(shlex.split(step))
         return
@@ -44,7 +44,7 @@ def sideload_snap(juju, tmp_path, unit_name):
     logger.info("uploading snap...")
     subprocess.run(
         shlex.split(
-            "juju scp ./otel-ebpf-profiler_0.130.0_amd64.snap {unit_name}:otel-ebpf-profiler.snap"
+            f"juju scp -m {juju.model}./otel-ebpf-profiler_0.130.0_amd64.snap {unit_name}:/home/ubuntu/otel-ebpf-profiler.snap"
         ),
         cwd=cwd,
     )
