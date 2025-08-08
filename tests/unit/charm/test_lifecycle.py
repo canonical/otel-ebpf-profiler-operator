@@ -5,6 +5,7 @@ import pytest
 from charm import OtelEbpfProfilerCharm
 from charms.operator_libs_linux.v2 import snap
 
+
 @pytest.mark.parametrize(
     "event",
     (

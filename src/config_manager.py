@@ -36,7 +36,7 @@ class ConfigManager:
         cfg = self._config.build()
         return Config(cfg, self._config.hash(cfg))
 
-    def add_topology_labels(self, topology_labels: Dict[str,str]):
+    def add_topology_labels(self, topology_labels: Dict[str, str]):
         """Inject juju topology labels on the profile pipeline."""
         self._config.inject_topology_labels(topology_labels)
 

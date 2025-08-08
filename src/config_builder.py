@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 TOPOLOGY_INJECTOR_PROCESSOR_NAME = "resource/profiling-topology-injector"
 
+
 def sha256(hashable: Union[str, bytes]) -> str:
     """Generate a SHA-256 hash of the input.
 
@@ -26,6 +27,7 @@ def sha256(hashable: Union[str, bytes]) -> str:
     if isinstance(hashable, str):
         hashable = hashable.encode("utf-8")
     return hashlib.sha256(hashable).hexdigest()
+
 
 @unique
 class Component(str, Enum):
@@ -103,15 +105,19 @@ class ConfigBuilder:
         self._add_exporter_insecure_skip_verify(self._exporter_skip_verify)
         return yaml.safe_dump(self._config)
 
-    def inject_topology_labels(self, topology_labels:dict):
+    def inject_topology_labels(self, topology_labels: dict):
         """Inject jujutopology into the emitted profiles."""
         self.add_component(
-                Component.processor,
-                TOPOLOGY_INJECTOR_PROCESSOR_NAME,
-                config={"attributes":[{"action": "insert", "key": key, "value": value} for key, value in topology_labels.items()]},
-                pipelines=['profiles']
-            )
-
+            Component.processor,
+            TOPOLOGY_INJECTOR_PROCESSOR_NAME,
+            config={
+                "attributes": [
+                    {"action": "insert", "key": key, "value": value}
+                    for key, value in topology_labels.items()
+                ]
+            },
+            pipelines=["profiles"],
+        )
 
     def add_default_config(self):
         """Return the default config for OpenTelemetry Collector."""
