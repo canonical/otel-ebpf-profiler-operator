@@ -14,6 +14,7 @@ import ops
 
 # from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
 from charms.operator_libs_linux.v2 import snap
+from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
 from config_manager import ConfigManager
 from ops.model import MaintenanceStatus
 
@@ -59,8 +60,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
             )
             return
 
-        # TODO add profiling integration with:
-        #   self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations['profiling'])
+        self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations['profiling'])
 
         # we split events in three categories:
         # events on which we need to set up things
@@ -116,8 +116,9 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
 
     def _reconcile(self):
         config_manager = ConfigManager()
-        # TODO: if profiling integration:
-        #  call config_manager.add_profile_forwarding(otlp_grpc_endpoints)
+
+        profiling_endpoints = [ep.otlp_grpc for ep in self._profiling_requirer.get_endpoints()]
+        config_manager.add_profile_forwarding(profiling_endpoints)
 
         # If the config file hash has changed, restart the snap
         config = config_manager.build()
