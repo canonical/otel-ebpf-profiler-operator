@@ -1,47 +1,38 @@
 #!/usr/bin/env python3
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
-"""A Juju charm for OpenTelemetry Collector on machines."""
+"""A Juju charm for OpenTelemetry eBPF Profiler on machines."""
 
 import logging
-import subprocess
+import os
 
+import cosl
 import ops
-from charmlibs.pathops import LocalPath
 
 # from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
 from charms.operator_libs_linux.v2 import snap
 from config_manager import ConfigManager
-from constants import SERVER_CERT_PATH, SERVER_CERT_PRIVATE_KEY_PATH
 from ops.model import MaintenanceStatus
 
 import snap_management
+from machine_lock import MachineLock
 
 logger = logging.getLogger(__name__)
 
 
-def is_tls_ready() -> bool:
-    """Return True if the server cert and private key are present on disk."""
-    return (
-            LocalPath(SERVER_CERT_PATH).exists() and LocalPath(SERVER_CERT_PRIVATE_KEY_PATH).exists()
-    )
-
-
-def refresh_certs():
-    """Run `update-ca-certificates` to refresh the trusted system certs."""
-    subprocess.run(["update-ca-certificates", "--fresh"], check=True)
-
-
-class OtlpEbpfProfilerCharm(ops.CharmBase):
+class OtelEbpfProfilerCharm(ops.CharmBase):
     """Charm the service."""
+
     _snap_name = "otel-ebpf-profiler"
     _service_name = "otel-ebpf-profiler"
 
     def __init__(self, framework: ops.Framework):
         super().__init__(framework)
 
-        if not self.unit.is_leader():
-            self.unit.status = ops.BlockedStatus("This charm doesn't support being scaled.")
+        if not MachineLock(cosl.JujuTopology.from_charm(self).identifier).acquire():
+            self.unit.status = ops.BlockedStatus(
+                "Unable to run on this machine, is already being profiled by another instance."
+            )
             return
 
         # TODO add profiling integration with:
@@ -63,15 +54,14 @@ class OtlpEbpfProfilerCharm(ops.CharmBase):
 
         framework.observe(self.on.collect_unit_status, self._on_collect_unit_status)
 
-
     # event handlers
-    def _on_setup_evt(self, _:ops.EventBase):
+    def _on_setup_evt(self, _: ops.EventBase):
         self._setup()
 
-    def _on_teardown_evt(self, _:ops.EventBase):
+    def _on_teardown_evt(self, _: ops.EventBase):
         self._teardown()
 
-    def _on_maintenance_evt(self, _:ops.EventBase):
+    def _on_maintenance_evt(self, _: ops.EventBase):
         self._reconcile()
 
     # lifecycle managers
@@ -101,15 +91,14 @@ class OtlpEbpfProfilerCharm(ops.CharmBase):
         # TODO: if profiling integration:
         #  call config_manager.add_profile_forwarding(otlp_grpc_endpoints)
 
-        # If the config file or any cert has changed, a change in the hash
-        # will trigger a restart
+        # If the config file hash has changed, restart the snap
         config = config_manager.build()
         if snap_management.update_config(config.config, config.hash):
             self.unit.status = MaintenanceStatus("Reloading snap config")
             # this may raise; let the charm go to error state
             snap_management.reload(self._snap_name, self._service_name)
 
-    def snap(self)-> snap.Snap:
+    def snap(self) -> snap.Snap:
         """Return the snap object.
 
         This method provides lazy initialization of snap objects, avoiding unnecessary
@@ -119,8 +108,12 @@ class OtlpEbpfProfilerCharm(ops.CharmBase):
 
     def _on_collect_unit_status(self, e: ops.CollectStatusEvent):
         # TODO: notify the user if there's no profiling relation
-        e.add_status(ops.ActiveStatus(""))
+
+        # assumption: if this is a testing env, the envvar won't be set
+        machine_id = os.getenv("JUJU_MACHINE_ID", "<testing>")
+        # signal that this profiler instance owns an exclusive lock for profiling this machine
+        e.add_status(ops.ActiveStatus(f"profiling machine {machine_id}"))
 
 
 if __name__ == "__main__":  # pragma: nocover
-    ops.main(OtlpEbpfProfilerCharm)
+    ops.main(OtelEbpfProfilerCharm)

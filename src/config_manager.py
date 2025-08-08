@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 Config = namedtuple("Config", "config, hash")
 
+
 class ConfigManager:
     """High-level configuration manager for OpenTelemetry Collector.
 
@@ -22,7 +23,6 @@ class ConfigManager:
 
     def __init__(
         self,
-        receiver_tls: bool = False,
         insecure_skip_verify: bool = False,
     ):
         """Generate a default OpenTelemetry collector ConfigManager.
@@ -30,12 +30,10 @@ class ConfigManager:
         The base configuration is our opinionated default.
 
         Args:
-            receiver_tls: whether to inject TLS config in all receivers on build
             insecure_skip_verify: value for `insecure_skip_verify` in all exporters
         """
         self._insecure_skip_verify = insecure_skip_verify
-        self._config =ConfigBuilder(
-            receiver_tls=receiver_tls,
+        self._config = ConfigBuilder(
             exporter_skip_verify=insecure_skip_verify,
         )
 
@@ -44,8 +42,8 @@ class ConfigManager:
         cfg = self._config.build()
         return Config(cfg, self._config.hash(cfg))
 
-    def add_profile_forwarding(self, endpoints: List[str], tls:bool=False):
-        """Configure forwarding profiles to a profiling backend (Pyroscope)."""
+    def add_profile_forwarding(self, endpoints: List[str], tls: bool = False):
+        """Configure forwarding profiles to a profiling backend (Pyroscope, Otelcol)."""
         for idx, endpoint in enumerate(endpoints):
             self._config.add_component(
                 Component.exporter,
@@ -63,8 +61,8 @@ class ConfigManager:
                     "tls": {
                         "insecure": True,
                         # "insecure": not tls,
-                        "insecure_skip_verify": self._insecure_skip_verify
-                        },
+                        "insecure_skip_verify": self._insecure_skip_verify,
+                    },
                 },
                 pipelines=["profiles"],
             )

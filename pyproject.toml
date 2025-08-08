@@ -1,20 +1,16 @@
 # Copyright 2021 Canonical Ltd.
 # See LICENSE file for licensing details.
 [project]
-name = "otlp-ebpf-profiler"
-version = "0.0"
-requires-python = "~=3.8"
+name = "otel-ebpf-profiler"
+version = "0.1"
+requires-python = "~=3.12.0"
 
 dependencies = [
   "ops[tracing]>=2.17,<3.0.0",
-  "pyyaml",
-  "urllib3",
-  "jsonschema",
-  "cryptography",
-  "lightkube>=0.11",
-  "cosl",
-  "pydantic",
-  "charmlibs-pathops",
+  "pyyaml",   # required by config manager
+  "urllib3",  # required by snap charmlib
+  "cosl",     # we use jujutopology
+  "pydantic", # we use it in our charm libs
 ]
 
 [project.optional-dependencies]
@@ -59,7 +55,7 @@ convention = "google"
 
 [tool.pyright]
 extraPaths = ["src", "lib"]
-pythonVersion = "3.8"
+pythonVersion = "3.12"
 pythonPlatform = "All"
 
 [tool.pytest.ini_options]

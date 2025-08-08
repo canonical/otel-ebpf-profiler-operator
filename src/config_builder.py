@@ -2,12 +2,10 @@
 
 import hashlib
 import logging
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from enum import Enum, unique
 
 import yaml
-
-from constants import SERVER_CERT_PATH, SERVER_CERT_PRIVATE_KEY_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -27,28 +25,6 @@ def sha256(hashable: Union[str, bytes]) -> str:
     if isinstance(hashable, str):
         hashable = hashable.encode("utf-8")
     return hashlib.sha256(hashable).hexdigest()
-
-
-@unique
-class Port(int, Enum):
-    """Ports used by the OpenTelemetry Collector."""
-    loki_http = 3500
-    """HTTP endpoint for Loki log ingestion."""
-    otlp_grpc = 4317
-    """gRPC endpoint for OTLP protocol"""
-    otlp_http = 4318
-    """HTTP endpoint for OTLP protocol"""
-    metrics = 8888
-    """Endpoint for Prometheus metrics scraping"""
-    health = 13133
-    """Health check endpoint"""
-    # Tracing
-    jaeger_grpc = 14250
-    """gRPC endpoint for Jaeger protocol"""
-    jaeger_thrift_http = 14268
-    """HTTP endpoint for Jaeger Thrift protocol"""
-    zipkin = 9411
-    """HTTP endpoint for Zipkin protocol"""
 
 
 @unique
@@ -84,13 +60,11 @@ class ConfigBuilder:
 
     def __init__(
         self,
-        receiver_tls: bool = False,
         exporter_skip_verify: bool = False,
     ):
         """Generate an empty OpenTelemetry collector config.
 
         Args:
-            receiver_tls: whether to inject TLS config in all receivers on build
             exporter_skip_verify: value for `insecure_skip_verify` in all exporters
 
         """
@@ -106,12 +80,11 @@ class ConfigBuilder:
                 "telemetry": {},
             },
         }
-        self._receiver_tls = receiver_tls
         self._exporter_skip_verify = exporter_skip_verify
         self.add_default_config()
 
     @staticmethod
-    def hash(cfg:str):
+    def hash(cfg: str):
         """Return the config as a SHA256 hash."""
         return sha256(yaml.safe_dump(cfg))
 
@@ -127,15 +100,12 @@ class ConfigBuilder:
             str: A YAML string representing the complete configuration.
         """
         self._add_missing_debug_exporters()
-        if self._receiver_tls:
-            self._add_tls_to_all_receivers()
         self._add_exporter_insecure_skip_verify(self._exporter_skip_verify)
         return yaml.safe_dump(self._config)
 
     def add_default_config(self):
         """Return the default config for OpenTelemetry Collector."""
-        # Currently, we always include the OTLP receiver to ensure the config is valid at all times.
-        # We also need these receivers for tracing.
+        # The default config enables the profiling receiver, which is the ebpf profiler.
         # There must be at least one pipeline, and it must have a valid receiver exporter pair.
         self.add_component(
             Component.receiver,
@@ -168,37 +138,6 @@ class ConfigBuilder:
         self._config[component.value][name] = config
         if pipelines:
             self._add_to_pipeline(name, component, pipelines)
-
-    def add_extension(self, name: str, extension_config: Dict[str, Any]):
-        """Add an extension to the config.
-
-        Extensions are enabled by adding them to the appropriate service section.
-
-        Args:
-            name: a string representing the pre-defined extension name.
-            extension_config: a (potentially nested) dict representing the config contents.
-
-        Returns:
-            Config since this is a builder method.
-        """
-        if name not in self._config["service"]["extensions"]:
-            self._config["service"]["extensions"].append(name)
-        self._config["extensions"][name] = extension_config
-
-    def add_telemetry(self, category: Literal["logs", "metrics", "traces"], telem_config: Dict):
-        """Add internal telemetry to the config.
-
-        Telemetry is enabled by adding it to the appropriate service section.
-
-        Args:
-            category: a string representing the pre-defined internal-telemetry types (logs, metrics, traces).
-            telem_config: a dict representing the telemetry config contents.
-
-        Returns:
-            Config since this is a builder method.
-        """
-        # https://opentelemetry.io/docs/collector/internal-telemetry
-        self._config["service"]["telemetry"][category] = telem_config
 
     def _add_to_pipeline(self, name: str, component: Component, pipelines: List[str]):
         """Add a pipeline component to the service::pipelines config.
@@ -240,30 +179,6 @@ class ConfigBuilder:
                     debug_exporter_required = True
         if debug_exporter_required:
             self.add_component(Component.exporter, "debug", {"verbosity": "basic"})
-
-    def _add_tls_to_all_receivers(
-        self,
-        cert_file: str = SERVER_CERT_PATH,
-        key_file: str = SERVER_CERT_PRIVATE_KEY_PATH,
-    ):
-        """Add TLS configuration to all receivers in the config.
-
-        If a TLS section already exist for a receiver, then it's not updated.
-
-        Ref: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#server-configuration
-        """
-        # NOTE: TLS can't be added to zipkin because it doesn't have a "protocols" section
-        for receiver in self._config.get("receivers", {}):
-            for protocol in {"http", "grpc", "thrift_http"}:
-                try:
-                    # TODO: Luca: double check if this actually updates the config
-                    section = self._config["receivers"][receiver]["protocols"][protocol]
-                except KeyError:
-                    continue
-                else:
-                    section.setdefault("tls", {})
-                    section["tls"].setdefault("key_file", key_file)
-                    section["tls"].setdefault("cert_file", cert_file)
 
     def _add_exporter_insecure_skip_verify(self, insecure_skip_verify: bool):
         """Add `tls::insecure_skip_verify` to every exporter's config.
