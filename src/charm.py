@@ -59,7 +59,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
             )
             return
 
-        self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations['profiling'])
+        self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations["profiling"])
 
         # we split events in three categories:
         # events on which we need to set up things

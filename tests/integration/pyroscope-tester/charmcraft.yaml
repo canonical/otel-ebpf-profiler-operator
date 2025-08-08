@@ -15,3 +15,7 @@ parts:
   charm:
     plugin: charm
     source: .
+
+provides:
+  profiling:
+    interface: profiling

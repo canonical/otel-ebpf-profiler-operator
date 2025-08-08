@@ -59,6 +59,7 @@ def sideload_snap(juju, tmp_path, unit_name):
         f"/var/lib/juju/agents/unit-{unit_name.replace('/', '-')}/charm/dispatch",
     )
 
+
 @fixture
 def pyroscope_tester_charm():
     # simple caching for local testing
@@ -66,4 +67,3 @@ def pyroscope_tester_charm():
     if path.exists():
         return path.resolve()
     return pack("./pyroscope-tester/")
-
