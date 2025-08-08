@@ -23,20 +23,47 @@ def charm():
     return pack("./")
 
 
-def sideload_snap(tmp_path, unit_name):
+def sideload_snap(juju, tmp_path, unit_name):
     # FIXME: https://github.com/canonical/otel-ebpf-profiler-operator/issues/3
     if snap_path := os.getenv("SNAP_PATH"):
-        step = f"juju scp {snap_path} {unit_name}:otel-ebpf-profiler.snap"
+        step = f"juju scp -m {juju.model} {snap_path} {unit_name}:/home/ubuntu/otel-ebpf-profiler.snap"
         logger.info(step)
         subprocess.run(shlex.split(step))
         return
 
     cwd = tmp_path / "snap"
-    script = [
-        "git clone https://github.com/canonical/otel-ebpf-profiler-snap --depth 1",
-        "snapcraft pack"
-        f"juju scp ./otel-ebpf-profiler_0.130.0_amd64.snap {unit_name}:otel-ebpf-profiler.snap",
-    ]
-    for step in script:
-        logger.info(step)
-        subprocess.run(shlex.split(step), cwd=cwd)
+
+    logger.info("cloning repo...")
+    subprocess.run(
+        shlex.split("git clone https://github.com/canonical/otel-ebpf-profiler-snap --depth 1"),
+        cwd=cwd,
+    )
+    logger.info("packing...")
+    cwd = cwd / "otel-ebpf-profiler-snap"
+    subprocess.run(shlex.split("snapcraft pack"), cwd=cwd)
+    logger.info("uploading snap...")
+    subprocess.run(
+        shlex.split(
+            f"juju scp -m {juju.model}./otel-ebpf-profiler_0.130.0_amd64.snap {unit_name}:/home/ubuntu/otel-ebpf-profiler.snap"
+        ),
+        cwd=cwd,
+    )
+
+    # this is basically jhack fire install
+    juju.ssh(
+        unit_name,
+        f"sudo /usr/bin/juju-exec -u {unit_name} "
+        "JUJU_DISPATCH_PATH=hooks/install "
+        f"JUJU_MODEL_NAME={juju.model} "
+        f"JUJU_UNIT_NAME={unit_name} "
+        f"/var/lib/juju/agents/unit-{unit_name.replace('/', '-')}/charm/dispatch",
+    )
+
+@fixture
+def pyroscope_tester_charm():
+    # simple caching for local testing
+    path = Path("./pyroscope-tester/pyroscope-tester_amd64.charm")
+    if path.exists():
+        return path.resolve()
+    return pack("./pyroscope-tester/")
+
