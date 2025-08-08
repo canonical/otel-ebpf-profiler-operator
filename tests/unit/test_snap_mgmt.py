@@ -7,13 +7,15 @@ import snap_management
 
 CfgMocks = namedtuple("CfgMocks", "config, hash")
 
+
 @pytest.fixture
 def mock_paths(tmp_path):
     with (
-        patch.object(snap_management, "CONFIG_PATH", tmp_path/"config.yaml") as cfg,
-        patch.object(snap_management, "HASH_LOCK_PATH", tmp_path/"hashlock.yaml") as hsh
+        patch.object(snap_management, "CONFIG_PATH", tmp_path / "config.yaml") as cfg,
+        patch.object(snap_management, "HASH_LOCK_PATH", tmp_path / "hashlock.yaml") as hsh,
     ):
         yield CfgMocks(cfg, hsh)
+
 
 def test_update_config_no_changes(mock_paths):
     # GIVEN an initial foo/foo content
@@ -27,6 +29,7 @@ def test_update_config_no_changes(mock_paths):
     assert mock_paths.config.read_text() == "foo"
     assert mock_paths.hash.read_text() == "foo"
 
+
 def test_update_only_hash_changed(mock_paths):
     # GIVEN an initial foo/foo content
     mock_paths.config.write_text("foo")
@@ -38,6 +41,7 @@ def test_update_only_hash_changed(mock_paths):
     # THEN the hash file is updated, but the config one remains the same (contents are identical)
     assert mock_paths.config.read_text() == "foo"
     assert mock_paths.hash.read_text() == "bar"
+
 
 def test_update_config_changed_but_not_hash(mock_paths):
     # GIVEN an initial foo/foo content
@@ -76,15 +80,3 @@ def test_cleanup(mock_paths):
     # THEN the files are gone
     assert not mock_paths.config.exists()
     assert not mock_paths.hash.exists()
-
-
-
-
-
-
-
-
-
-
-
-
