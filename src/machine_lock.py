@@ -26,6 +26,7 @@ class MachineLock:
 
     def _set(self):
         """Set the lock owner to yourself."""
+        self._lockfile.parent.mkdir(parents=True, exist_ok=True)
         self._lockfile.write_text(self._fingerprint)
 
     def acquire(self) -> bool:
