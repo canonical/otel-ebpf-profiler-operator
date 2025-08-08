@@ -23,6 +23,17 @@ from machine_lock import MachineLock
 logger = logging.getLogger(__name__)
 
 
+def _snap_on_disk():
+    # here for ease of testing
+    return Path("/home/ubuntu/otel-ebpf-profiler.snap").expanduser().exists()
+
+
+def _install_snap():
+    subprocess.run(
+        shlex.split("sudo snap install /home/ubuntu/otel-ebpf-profiler.snap --dangerous --classic")
+    )
+
+
 class OtelEbpfProfilerCharm(ops.CharmBase):
     """Charm the service."""
 
@@ -40,7 +51,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
 
         # FIXME: https://github.com/canonical/otel-ebpf-profiler-operator/issues/3
         #  drop this hack when the snap is on the snapstore
-        if not Path("/home/ubuntu/otel-ebpf-profiler.snap").expanduser().exists():
+        if not _snap_on_disk():
             logger.error(Path("/home/ubuntu/otel-ebpf-profiler.snap").expanduser())
             self.unit.status = ops.BlockedStatus(
                 f"juju scp -m {self.model.name} "
@@ -85,11 +96,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
         # FIXME: https://github.com/canonical/otel-ebpf-profiler-operator/issues/3
         #  for now we have to install it manually
         #  replace with: snap_management.install_snap(self._snap_name)
-        subprocess.run(
-            shlex.split(
-                "sudo snap install /home/ubuntu/otel-ebpf-profiler.snap --dangerous --classic"
-            )
-        )
+        _install_snap()
 
         # Start the snap
         self.unit.status = MaintenanceStatus(f"Starting {self._snap_name} snap")

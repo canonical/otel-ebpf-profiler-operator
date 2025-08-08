@@ -16,6 +16,13 @@ def mock_lockfile(tmp_path):
         yield pth
 
 
+@pytest.fixture(autouse=True)
+def mock_snap_install():
+    with patch("charm._snap_on_disk", return_value=True):
+        with patch("charm._install_snap"):
+            yield
+
+
 @pytest.fixture
 def snap_mocks():
     with (
