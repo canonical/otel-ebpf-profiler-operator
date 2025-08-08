@@ -88,6 +88,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
 
     def _reconcile(self):
         config_manager = ConfigManager()
+        config_manager.add_topology_labels(cosl.JujuTopology.from_charm(self).as_dict())
         # TODO: if profiling integration:
         #  call config_manager.add_profile_forwarding(otlp_grpc_endpoints)
 
