@@ -5,6 +5,9 @@
 
 import logging
 import os
+import shlex
+import subprocess
+from pathlib import Path
 
 import cosl
 import ops
@@ -32,6 +35,16 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
         if not MachineLock(cosl.JujuTopology.from_charm(self).identifier).acquire():
             self.unit.status = ops.BlockedStatus(
                 "Unable to run on this machine, is already being profiled by another instance."
+            )
+            return
+
+        # FIXME: https://github.com/canonical/otel-ebpf-profiler-operator/issues/3
+        #  drop this hack when the snap is on the snapstore
+        if not Path("/home/ubuntu/otel-ebpf-profiler.snap").expanduser().exists():
+            logger.error(Path("/home/ubuntu/otel-ebpf-profiler.snap").expanduser())
+            self.unit.status = ops.BlockedStatus(
+                f"juju scp -m {self.model.name} "
+                f"./otel-ebpf-profiler_0.130.0_amd64.snap {self.unit.name}:/home/ubuntu/otel-ebpf-profiler.snap"
             )
             return
 
@@ -68,8 +81,16 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
     def _setup(self):
         """Install the snap."""
         self.unit.status = MaintenanceStatus(f"Installing {self._snap_name} snap")
-        # for now we have to install it manually
-        snap_management.install_snap(self._snap_name)
+
+        # FIXME: https://github.com/canonical/otel-ebpf-profiler-operator/issues/3
+        #  for now we have to install it manually
+        #  replace with: snap_management.install_snap(self._snap_name)
+        subprocess.run(
+            shlex.split(
+                "sudo snap install /home/ubuntu/otel-ebpf-profiler.snap --dangerous --classic"
+            )
+        )
+
         # Start the snap
         self.unit.status = MaintenanceStatus(f"Starting {self._snap_name} snap")
         try:
