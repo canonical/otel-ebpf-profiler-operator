@@ -41,15 +41,15 @@ class PyroscopeTesterCharm(ops.CharmBase):
         self.unit.status = ops.MaintenanceStatus("configuring...")
         self.unit.open_port("tcp", 4040)
 
-        own_IP = _runcmd("hostname -I").split()[0]
+        own_ip = _runcmd("hostname -I").split()[0]
 
         profiling = ProfilingEndpointProvider(
             self.model.relations.get("profiling", []), app=self.app
         )
-        profiling.publish_endpoint(f"{own_IP}:4040")
+        profiling.publish_endpoint(f"{own_ip}:4040")
 
         self.unit.status = ops.ActiveStatus(
-            f"pyroscope {PYRO_VERSION} ready at http://{own_IP}:4040"
+            f"pyroscope {PYRO_VERSION} ready at http://{own_ip}:4040"
         )
 
 
