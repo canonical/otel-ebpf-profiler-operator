@@ -1,0 +1,17 @@
+# This file configures Charmcraft.
+# See https://canonical-charmcraft.readthedocs-hosted.com/en/stable/reference/files/charmcraft-yaml-file/
+type: charm
+name: pyroscope-tester
+title: pyroscope tester
+summary: pyroscope tester
+description: Did I say pyroscope tester?
+
+base: ubuntu@24.04
+platforms:
+  amd64:
+  arm64:
+
+parts:
+  charm:
+    plugin: charm
+    source: .
