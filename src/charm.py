@@ -5,12 +5,16 @@
 
 import logging
 import os
+import shlex
+import subprocess
+from pathlib import Path
 
 import cosl
 import ops
 
 # from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
 from charms.operator_libs_linux.v2 import snap
+from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
 from config_manager import ConfigManager
 from ops.model import MaintenanceStatus
 
@@ -18,6 +22,17 @@ import snap_management
 from machine_lock import MachineLock
 
 logger = logging.getLogger(__name__)
+
+
+def _snap_on_disk():
+    # here for ease of testing
+    return Path("/home/ubuntu/otel-ebpf-profiler.snap").expanduser().exists()
+
+
+def _install_snap():
+    subprocess.run(
+        shlex.split("sudo snap install /home/ubuntu/otel-ebpf-profiler.snap --dangerous --classic")
+    )
 
 
 class OtelEbpfProfilerCharm(ops.CharmBase):
@@ -35,8 +50,16 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
             )
             return
 
-        # TODO add profiling integration with:
-        #   self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations['profiling'])
+        # FIXME: https://github.com/canonical/otel-ebpf-profiler-operator/issues/3
+        #  drop this hack when the snap is on the snapstore
+        if not _snap_on_disk():
+            self.unit.status = ops.BlockedStatus(
+                f"juju scp -m {self.model.name} "
+                f"./otel-ebpf-profiler_0.130.0_amd64.snap {self.unit.name}:/home/ubuntu/otel-ebpf-profiler.snap"
+            )
+            return
+
+        self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations["profiling"])
 
         # we split events in three categories:
         # events on which we need to set up things
@@ -68,8 +91,12 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
     def _setup(self):
         """Install the snap."""
         self.unit.status = MaintenanceStatus(f"Installing {self._snap_name} snap")
-        # for now we have to install it manually
-        snap_management.install_snap(self._snap_name)
+
+        # FIXME: https://github.com/canonical/otel-ebpf-profiler-operator/issues/3
+        #  for now we have to install it manually
+        #  replace with: snap_management.install_snap(self._snap_name)
+        _install_snap()
+
         # Start the snap
         self.unit.status = MaintenanceStatus(f"Starting {self._snap_name} snap")
         try:
@@ -88,8 +115,9 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
 
     def _reconcile(self):
         config_manager = ConfigManager()
-        # TODO: if profiling integration:
-        #  call config_manager.add_profile_forwarding(otlp_grpc_endpoints)
+
+        profiling_endpoints = [ep.otlp_grpc for ep in self._profiling_requirer.get_endpoints()]
+        config_manager.add_profile_forwarding(profiling_endpoints)
 
         # If the config file hash has changed, restart the snap
         config = config_manager.build()
