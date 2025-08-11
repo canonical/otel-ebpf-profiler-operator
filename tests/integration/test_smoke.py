@@ -14,15 +14,6 @@ PYRO_TESTER_APP_NAME = "pyroscope-tester"
 @pytest.mark.setup
 def test_deploy(juju: Juju, charm):
     juju.deploy(charm, APP_NAME, constraints={"virt-type": "virtual-machine"})
-    juju.wait(lambda status: jubilant.all_blocked(status, APP_NAME))
-
-
-def test_sideload_snap(juju: Juju, tmp_path):
-    # FIXME: https://github.com/canonical/otel-ebpf-profiler-operator/issues/3
-    unit_name = list(juju.status().apps[APP_NAME].units.keys())[0]
-
-    sideload_snap(juju, tmp_path, unit_name)
-
     juju.wait(jubilant.all_active)
 
 

@@ -66,8 +66,7 @@ def test_install_snap(ctx, event, snap_mocks):
         in ctx.unit_status_history
     )
     assert state_out.unit_status == ops.ActiveStatus("profiling machine <testing>")
-    # FIXME: https://github.com/canonical/otel-ebpf-profiler-operator/issues/3
-    # assert snap_mocks.snap_mgmt.install_snap.called
+    assert snap_mocks.snap_mgmt.install_snap.called
     assert snap_mocks.charm_snap.return_value.start.called
 
 
