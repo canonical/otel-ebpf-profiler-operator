@@ -11,13 +11,7 @@ UNINVITED_GUEST = APP_NAME + "guest"
 @pytest.mark.setup
 def test_deploy(juju: Juju, charm):
     juju.deploy(charm, APP_NAME, constraints={"virt-type": "virtual-machine"})
-    juju.wait(
-        jubilant.all_active,
-        timeout=5*60,
-        error=jubilant.any_error,
-        delay=10,
-        successes=3
-    )
+    juju.wait(jubilant.all_active, timeout=5 * 60, error=jubilant.any_error, delay=10, successes=3)
 
 
 @pytest.mark.setup
@@ -26,13 +20,14 @@ def test_deploy_second_profiler_same_machine(juju: Juju, charm):
     juju.deploy(charm, UNINVITED_GUEST, to=machine_id)
     juju.wait(
         lambda status: jubilant.all_blocked(status, UNINVITED_GUEST),
-        timeout=5*60,
+        timeout=5 * 60,
         error=jubilant.any_error,
         delay=10,
-        successes=3
+        successes=3,
     )
 
-def test_blocked_status(juju:Juju):
+
+def test_blocked_status(juju: Juju):
     app_status = juju.status().apps[UNINVITED_GUEST].app_status
     assert app_status.current == "blocked"
     assert "is already being profiled" in app_status.message
@@ -41,5 +36,3 @@ def test_blocked_status(juju:Juju):
 @pytest.mark.teardown
 def test_cleanup(juju):
     juju.remove_application(UNINVITED_GUEST, force=True)
-
-

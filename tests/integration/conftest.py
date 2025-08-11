@@ -6,7 +6,8 @@ from pytest import fixture
 
 logger = logging.getLogger("conftest")
 APP_NAME = "profiler"
-REPO_ROOT=Path(__file__).parent.parent.parent
+REPO_ROOT = Path(__file__).parent.parent.parent
+
 
 @fixture(scope="module")
 def charm():
@@ -14,7 +15,7 @@ def charm():
     if charm := os.getenv("CHARM_PATH"):
         logger.info("using charm from env")
         return charm
-    if Path(charm := REPO_ROOT/"otel-ebpf-profiler_ubuntu@24.04-amd64.charm").exists():
+    if Path(charm := REPO_ROOT / "otel-ebpf-profiler_ubuntu@24.04-amd64.charm").exists():
         logger.info(f"using existing charm from {REPO_ROOT}")
         return charm
     logger.info(f"packing from {REPO_ROOT}")
@@ -28,4 +29,4 @@ def pyroscope_tester_charm():
     path = itest_root / "pyroscope-tester" / "pyroscope-tester_amd64.charm"
     if path.exists():
         return path.resolve()
-    return pack(itest_root/"pyroscope-tester")
+    return pack(itest_root / "pyroscope-tester")
