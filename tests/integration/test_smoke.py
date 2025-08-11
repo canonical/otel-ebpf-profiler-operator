@@ -6,7 +6,7 @@ import pytest
 import jubilant
 from jubilant import Juju
 
-from conftest import APP_NAME, sideload_snap
+from conftest import APP_NAME
 
 PYRO_TESTER_APP_NAME = "pyroscope-tester"
 
