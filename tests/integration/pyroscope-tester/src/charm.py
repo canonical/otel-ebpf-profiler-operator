@@ -32,10 +32,11 @@ class PyroscopeTesterCharm(ops.CharmBase):
         super().__init__(framework)
         self.unit.status = ops.MaintenanceStatus("installing pyroscope...")
         if not (config_path := Path("/etc/pyroscope/config.yml")).exists():
+            pyro_deb = f"pyroscope_{PYRO_VERSION}_linux_amd64.deb"
             _runcmd(
-                f"wget https://github.com/grafana/pyroscope/releases/download/v{PYRO_VERSION}/pyroscope_{PYRO_VERSION}_linux_amd64.deb"
+                f"wget https://github.com/grafana/pyroscope/releases/download/v{PYRO_VERSION}/{pyro_deb}"
             )
-            _runcmd(f"sudo dpkg -i pyroscope_{PYRO_VERSION}_linux_amd64.deb")
+            _runcmd(f"sudo dpkg -i {pyro_deb}")
             config_path.write_text(yaml.safe_dump(PYRO_CONFIG))
 
         self.unit.status = ops.MaintenanceStatus("configuring...")
