@@ -1,7 +1,7 @@
 # This file configures Charmcraft.
 # See https://canonical-charmcraft.readthedocs-hosted.com/en/stable/reference/files/charmcraft-yaml-file/
 type: charm
-name: pyroscope-tester
+name: pyroscope-vm-tester
 title: pyroscope tester
 summary: pyroscope tester
 description: Did I say pyroscope tester?

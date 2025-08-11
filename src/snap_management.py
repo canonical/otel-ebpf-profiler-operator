@@ -120,8 +120,7 @@ def install_snap(
     filename = "otel-ebpf-profiler_0.130.0_amd64.snap"
     subprocess.run(
         shlex.split(
-            "wget https://raw.githubusercontent.com/michaeldmitry/otel-ebpf-profiler-snap/"
-            f"main/{filename}"
+            f"wget https://github.com/michaeldmitry/otel-ebpf-profiler-snap/releases/download/0.130.0/{filename}"
         )
     )
     subprocess.run(shlex.split(f"sudo snap install ./{filename} --dangerous --classic"))
