@@ -5,8 +5,6 @@
 
 import logging
 import os
-import shlex
-import subprocess
 
 import cosl
 import ops
@@ -101,11 +99,10 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
             # this may raise; let the charm go to error state
             snap_management.reload(self._snap_name, self._service_name)
 
-        if not self.snap().services['otel-ebpf-profiler']['active']:
+        if not self.snap().services["otel-ebpf-profiler"]["active"]:
             # if at this point the snap isn't running, it could be because we've SIGHUPPED it too early
             # after installing it.
             self.snap().start(enable=True)
-
 
     def snap(self) -> snap.Snap:
         """Return the snap object.
