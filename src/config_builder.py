@@ -112,7 +112,7 @@ class ConfigBuilder:
             TOPOLOGY_INJECTOR_PROCESSOR_NAME,
             config={
                 "attributes": [
-                    {"action": "insert", "key": key, "value": value}
+                    {"action": "insert", "key": "juju_" + key, "value": value}
                     for key, value in topology_labels.items()
                 ]
             },
