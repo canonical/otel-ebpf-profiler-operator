@@ -27,7 +27,6 @@ platforms:
 requires:
   profiling:
     interface: profiling
-    limit: 1
     optional: true
     description: Require a profiling backend (or an otel collector) to send the gathered profiles to.
 
