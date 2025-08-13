@@ -9,7 +9,6 @@ import os
 import cosl
 import ops
 
-# from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
 from charms.operator_libs_linux.v2 import snap
 from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
 from config_manager import ConfigManager
