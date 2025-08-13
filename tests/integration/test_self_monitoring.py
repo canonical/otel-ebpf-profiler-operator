@@ -93,3 +93,15 @@ def test_loki_alerts_are_aggregated(juju: Juju):
         f"find /var/lib/juju/agents/unit-{OTEL_COLLECTOR_APP_NAME}-0/charm/loki_alert_rules -type f",
     )
     assert APP_NAME in alert_files
+
+
+@pytest.mark.teardown
+def test_teardown(juju: Juju):
+    juju.remove_application(OTEL_COLLECTOR_APP_NAME)
+    juju.wait(
+        lambda status: jubilant.all_active(status, APP_NAME),
+        timeout=10 * 60,
+        error=lambda status: jubilant.any_error(status, APP_NAME),
+        delay=10,
+        successes=6,
+    )

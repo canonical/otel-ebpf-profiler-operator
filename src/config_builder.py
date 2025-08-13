@@ -31,7 +31,7 @@ def sha256(hashable: Union[str, bytes]) -> str:
 class Port(IntEnum):
     """Ports used by the Otel eBPF profiler."""
 
-    """The default port is 8888, but that would conflict with an Otel Collector’s metrics port running on the same machine."""
+    """The default port is 8888, but that would conflict with that of an Otel Collector running on the same machine."""
     metrics = 9999
 
 
