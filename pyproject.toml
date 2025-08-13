@@ -59,7 +59,6 @@ pythonVersion = "3.12"
 pythonPlatform = "All"
 
 [tool.pytest.ini_options]
-asyncio_mode = "auto"
 addopts = "--tb=native --verbose --capture=no --log-cli-level=INFO"
 
 [tool.codespell]

@@ -9,8 +9,8 @@ import os
 import cosl
 import ops
 
-# from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
 from charms.operator_libs_linux.v2 import snap
+from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
 from config_manager import ConfigManager
 from ops.model import MaintenanceStatus
 
@@ -35,8 +35,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
             )
             return
 
-        # TODO add profiling integration with:
-        #   self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations['profiling'])
+        self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations["profiling"])
 
         # we split events in three categories:
         # events on which we need to set up things
@@ -68,8 +67,8 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
     def _setup(self):
         """Install the snap."""
         self.unit.status = MaintenanceStatus(f"Installing {self._snap_name} snap")
-        # for now we have to install it manually
         snap_management.install_snap(self._snap_name)
+
         # Start the snap
         self.unit.status = MaintenanceStatus(f"Starting {self._snap_name} snap")
         try:
@@ -88,8 +87,9 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
 
     def _reconcile(self):
         config_manager = ConfigManager()
-        # TODO: if profiling integration:
-        #  call config_manager.add_profile_forwarding(otlp_grpc_endpoints)
+
+        profiling_endpoints = [ep.otlp_grpc for ep in self._profiling_requirer.get_endpoints()]
+        config_manager.add_profile_forwarding(profiling_endpoints)
 
         # If the config file hash has changed, restart the snap
         config = config_manager.build()
@@ -97,6 +97,11 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
             self.unit.status = MaintenanceStatus("Reloading snap config")
             # this may raise; let the charm go to error state
             snap_management.reload(self._snap_name, self._service_name)
+
+        if not self.snap().services["otel-ebpf-profiler"]["active"]:
+            # if at this point the snap isn't running, it could be because we've SIGHUPPED it too early
+            # after installing it.
+            self.snap().start(enable=True)
 
     def snap(self) -> snap.Snap:
         """Return the snap object.

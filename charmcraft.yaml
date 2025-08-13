@@ -24,6 +24,12 @@ platforms:
   ubuntu@24.04:amd64:
   ubuntu@24.04:arm64:
 
+requires:
+  profiling:
+    interface: profiling
+    optional: true
+    description: Require a profiling backend (or an otel collector) to send the gathered profiles to.
+
 parts:
   charm:
     source: .
