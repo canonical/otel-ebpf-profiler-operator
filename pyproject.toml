@@ -28,6 +28,7 @@ dev = [
   "ops[testing]",
   "jubilant",
   "tenacity",
+  "pytest-bdd",
 ]
 
 # Testing tools configuration
