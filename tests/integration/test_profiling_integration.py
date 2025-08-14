@@ -34,7 +34,7 @@ def test_deploy_pyroscope(juju: Juju, pyroscope_tester_charm):
 
 
 @pytest.mark.setup
-def test_integrate_pyroscope(juju: Juju, pyroscope_tester_charm):
+def test_integrate_pyroscope(juju: Juju):
     juju.integrate(APP_NAME, PYRO_TESTER_APP_NAME)
     juju.wait(jubilant.all_active, timeout=5 * 60, error=jubilant.any_error, delay=10, successes=3)
 
