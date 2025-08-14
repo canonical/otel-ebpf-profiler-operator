@@ -1,5 +1,7 @@
 """Constants shared by this package."""
 
 from typing import Final
+from pathlib import Path
 
-MACHINE_LOCK_PATH: Final[str] = "/etc/otel_ebpf_profiler/machine.lock"
+MACHINE_LOCK_PATH: Final[str] = "/etc/otel-ebpf-profiler/machine.lock"
+CA_CERT_PATH: Final[Path] = Path("/etc/otel-ebpf-profiler/receive-ca-cert.crt")

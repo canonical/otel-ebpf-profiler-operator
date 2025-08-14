@@ -16,6 +16,10 @@ from config_manager import ConfigManager
 from config_builder import Port
 from ops.model import MaintenanceStatus
 from charms.grafana_agent.v0.cos_agent import COSAgentProvider, charm_tracing_config
+from charms.certificate_transfer_interface.v1.certificate_transfer import (
+    CertificateTransferRequires,
+)
+from constants import CA_CERT_PATH
 
 import snap_management
 from machine_lock import MachineLock
@@ -48,6 +52,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
             # cos_agent will instead scrape the snap's dumped logs from /var/log/**
             log_slots=None,
         )
+        self._cert_transfer = CertificateTransferRequires(self, "receive-ca-cert")
 
         # we split events in three categories:
         # events on which we need to set up things
@@ -98,14 +103,28 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
         snap_management.cleanup_config()
 
     def _reconcile(self):
+        self._reconcile_certs()
         self._reconcile_charm_tracing()
         self._reconcile_config()
 
+    def _reconcile_certs(self):
+        """Configure certs, which are transferred from a certificate_transfer provider, on disk."""
+        certificates = self._cert_transfer.get_all_certificates()
+        if certificates:
+            combined_ca = "".join(cert + "\n\n" for cert in sorted(certificates))
+            current_combined_ca = CA_CERT_PATH.read_text() if CA_CERT_PATH.exists() else ""
+            if current_combined_ca != combined_ca:
+                logger.debug("Updating CA file with a new set of certificates.")
+                CA_CERT_PATH.parent.mkdir(parents=True, exist_ok=True)
+                CA_CERT_PATH.write_text(combined_ca)
+        else:
+            if CA_CERT_PATH.exists():
+                logger.debug("Deleting CA file since no certificates were transferred.")
+                CA_CERT_PATH.unlink()
+
     def _reconcile_charm_tracing(self):
         """Configure ops.tracing to send traces to a tracing backend."""
-        # FIXME: pass a CA cert path once TLS is supported
-        # https://github.com/canonical/otel-ebpf-profiler-operator/issues/2
-        endpoint, ca_cert_path = charm_tracing_config(self._cos_agent, None)
+        endpoint, ca_cert_path = charm_tracing_config(self._cos_agent, CA_CERT_PATH)
         if not endpoint:
             return
         ops_tracing.set_destination(
