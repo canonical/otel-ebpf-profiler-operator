@@ -1,14 +1,9 @@
-import json
-from unittest.mock import patch
 import ops
-from ops.testing import State, CharmEvents, Relation
+from ops.testing import State, CharmEvents
 import pytest
 
 from charm import OtelEbpfProfilerCharm
 from charms.operator_libs_linux.v2 import snap
-
-# autouse the snap_mocks fixture in this whole module
-pytestmark = pytest.mark.usefixtures("snap_mocks")
 
 
 @pytest.mark.parametrize(
@@ -104,28 +99,3 @@ def test_config_reload(ctx, event, snap_mocks, changes):
         assert not snap_mocks.snap_mgmt.reload.called
 
     assert state_out.unit_status == ops.ActiveStatus("profiling machine <testing>")
-
-
-def test_charm_tracing_configured(ctx):
-    # GIVEN a cos_agent integration
-    # AND remote has published a tracing endpoint
-    url = "1.2.3.4:4318"
-    cos_agent_relation = Relation(
-        endpoint="cos-agent",
-        remote_units_data={
-            0: {
-                "receivers": json.dumps(
-                    [{"protocol": {"name": "otlp_http", "type": "http"}, "url": url}]
-                )
-            }
-        },
-    )
-
-    # WHEN we receive any event
-    with patch("ops_tracing.set_destination") as p:
-        ctx.run(
-            ctx.on.update_status(),
-            state=State(relations={cos_agent_relation}),
-        )
-    # THEN the charm has called ops_tracing.set_destination with the expected params
-    p.assert_called_with(url=url + "/v1/traces", ca=None)

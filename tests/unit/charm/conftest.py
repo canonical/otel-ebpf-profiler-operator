@@ -16,7 +16,7 @@ def mock_lockfile(tmp_path):
         yield pth
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def snap_mocks():
     with (
         patch.object(OtelEbpfProfilerCharm, "snap", MagicMock()) as snapmock,
