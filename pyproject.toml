@@ -66,4 +66,5 @@ skip = ".git,.tox,build,venv*"
 ignore-words-list = "assertIn"
 
 [tool.uv.sources]
+# FIXME: do not merge
 cosl = { git = "https://github.com/canonical/cos-lib", rev = "feat/reconciler" }
