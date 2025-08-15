@@ -41,9 +41,9 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
 
         # we split events in three categories:
         # events on which we need to set up things
-        observe_all(self, (self.on.upgrade_charm, self.on.install), self._setup)
+        observe_all(self, (ops.UpgradeCharmEvent, ops.InstallEvent), self._setup)
         # events on which we need to tear down things
-        observe_all(self, (self.on.stop, self.on.remove), self._teardown)
+        observe_all(self, (ops.StopEvent, ops.RemoveEvent), self._teardown)
         # events on which we need to do regular config maintenance
         observe_all(self, ALL_EVENTS_VM, self._reconcile)
 
