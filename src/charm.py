@@ -8,11 +8,14 @@ import os
 
 import cosl
 import ops
+import ops_tracing
 
 from charms.operator_libs_linux.v2 import snap
 from charms.pyroscope_coordinator_k8s.v0.profiling import ProfilingEndpointRequirer
 from config_manager import ConfigManager
+from config_builder import Port
 from ops.model import MaintenanceStatus
+from charms.grafana_agent.v0.cos_agent import COSAgentProvider, charm_tracing_config
 
 import snap_management
 from machine_lock import MachineLock
@@ -36,6 +39,15 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
             return
 
         self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations["profiling"])
+        self._cos_agent = COSAgentProvider(
+            self,
+            # FIXME: uncomment when https://github.com/canonical/opentelemetry-collector-operator/issues/61 is fixed
+            # tracing_protocols=["otlp_http"],
+            metrics_endpoints=[{"path": "/metrics", "port": int(Port.metrics)}],
+            # since otel-ebpf-profiler is a classic snap, we don't need to specify `log_slots`.
+            # cos_agent will instead scrape the snap's dumped logs from /var/log/**
+            log_slots=None,
+        )
 
         # we split events in three categories:
         # events on which we need to set up things
@@ -86,6 +98,23 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
         snap_management.cleanup_config()
 
     def _reconcile(self):
+        self._reconcile_charm_tracing()
+        self._reconcile_config()
+
+    def _reconcile_charm_tracing(self):
+        """Configure ops.tracing to send traces to a tracing backend."""
+        # FIXME: pass a CA cert path once TLS is supported
+        # https://github.com/canonical/otel-ebpf-profiler-operator/issues/2
+        endpoint, ca_cert_path = charm_tracing_config(self._cos_agent, None)
+        if not endpoint:
+            return
+        ops_tracing.set_destination(
+            url=endpoint + "/v1/traces",
+            ca=ca_cert_path,
+        )
+
+    def _reconcile_config(self):
+        """Configure the otel collector config."""
         config_manager = ConfigManager()
 
         profiling_endpoints = [ep.otlp_grpc for ep in self._profiling_requirer.get_endpoints()]

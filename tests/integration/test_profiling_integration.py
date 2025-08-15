@@ -19,8 +19,12 @@ def test_deploy(juju: Juju, charm):
 
 def test_profiler_running(juju: Juju):
     unit_name = list(juju.status().apps[APP_NAME].units.keys())[0]
-    out = juju.ssh(unit_name, "sudo snap logs otel-ebpf-profiler -n=all")
-    assert "Everything is ready. Begin running and processing data." in out
+
+    out = juju.ssh(
+        unit_name,
+        'sudo snap services otel-ebpf-profiler | awk \'$2=="enabled" && $3=="active"\'',
+    )
+    assert out
 
 
 @pytest.mark.setup

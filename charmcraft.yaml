@@ -30,6 +30,13 @@ requires:
     optional: true
     description: Require a profiling backend (or an otel collector) to send the gathered profiles to.
 
+provides: 
+  cos-agent:
+    interface: cos_agent
+    limit: 1
+    optional: true
+    description: Allow an OpenTelemetry Collector or Grafana Agent to scrape or receive forwarded self-monitoring data.
+
 parts:
   charm:
     source: .
