@@ -7,9 +7,9 @@ requires-python = "~=3.12.0"
 
 dependencies = [
   "ops[tracing]>=2.17,<3.0.0",
-  "pyyaml",   # required by config manager
-  "urllib3",  # required by snap charmlib
-  "cosl",     # we use jujutopology
+  "pyyaml", # required by config manager
+  "urllib3", # required by snap charmlib
+  "cosl", # we use jujutopology and reconciler
   "pydantic", # we use it in our charm libs
 ]
 
@@ -64,3 +64,6 @@ addopts = "--tb=native --verbose --capture=no --log-cli-level=INFO"
 [tool.codespell]
 skip = ".git,.tox,build,venv*"
 ignore-words-list = "assertIn"
+
+[tool.uv.sources]
+cosl = { git = "https://github.com/canonical/cos-lib", rev = "feat/reconciler" }

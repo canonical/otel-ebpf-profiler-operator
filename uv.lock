@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = "==3.12.*"
 
 [[package]]
@@ -32,17 +32,13 @@ wheels = [
 [[package]]
 name = "cosl"
 version = "1.0.0"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/canonical/cos-lib?rev=feat%2Freconciler#5801b21de28520369d29afb99eea10ae8a5e87c9" }
 dependencies = [
     { name = "ops" },
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "tenacity" },
     { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/25/13/ca147298721702679f2a286022184fd12b9d5236124308bf363e7184e5b5/cosl-1.0.0.tar.gz", hash = "sha256:5cef884faac1313ae6d234fcd6f40db0cbdd44bcdacfd9a6e9ecf9cede219359", size = 40818, upload-time = "2025-05-22T13:26:16.284Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a2/58/e80bd8436e2a6bb80b62b0317711d48ef1cab4b38e0e9f1efe73d13c0187/cosl-1.0.0-py3-none-any.whl", hash = "sha256:4ed54e818a5614a5164011253c12441cd0bffacfd99c8bd6b5b9740a397e482d", size = 33525, upload-time = "2025-05-22T13:26:14.804Z" },
 ]
 
 [[package]]
@@ -225,7 +221,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "codespell", marker = "extra == 'dev'" },
-    { name = "cosl" },
+    { name = "cosl", git = "https://github.com/canonical/cos-lib?rev=feat%2Freconciler" },
     { name = "coverage", extras = ["toml"], marker = "extra == 'dev'" },
     { name = "jubilant", marker = "extra == 'dev'" },
     { name = "ops", extras = ["testing"], marker = "extra == 'dev'" },
