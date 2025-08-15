@@ -7,7 +7,7 @@ import logging
 import os
 
 from cosl import JujuTopology
-from cosl.reconciler import observe_all, ALL_EVENTS_VM
+from cosl.reconciler import observe_events, reconcilable_events_machine
 
 import ops
 
@@ -41,11 +41,11 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
 
         # we split events in three categories:
         # events on which we need to set up things
-        observe_all(self, (ops.UpgradeCharmEvent, ops.InstallEvent), self._setup)
+        observe_events(self, (ops.UpgradeCharmEvent, ops.InstallEvent), self._setup)
         # events on which we need to tear down things
-        observe_all(self, (ops.StopEvent, ops.RemoveEvent), self._teardown)
+        observe_events(self, (ops.StopEvent, ops.RemoveEvent), self._teardown)
         # events on which we need to do regular config maintenance
-        observe_all(self, ALL_EVENTS_VM, self._reconcile)
+        observe_events(self, reconcilable_events_machine, self._reconcile)
 
         framework.observe(self.on.collect_unit_status, self._on_collect_unit_status)
 
