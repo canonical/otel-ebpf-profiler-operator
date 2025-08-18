@@ -102,7 +102,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
     def _reconcile_config(self):
         """Configure the otel collector config."""
         config_manager = ConfigManager()
-        config_manager.add_topology_labels(cosl.JujuTopology.from_charm(self).as_dict())
+        config_manager.add_topology_labels(JujuTopology.from_charm(self).as_dict())
 
         # Profiling integration
         profiling_endpoints = [ep.otlp_grpc for ep in self._profiling_requirer.get_endpoints()]
