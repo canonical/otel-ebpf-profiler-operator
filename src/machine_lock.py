@@ -1,6 +1,5 @@
 """Simple machine lock to ensure each juju machine can only be claimed by a single unit."""
 
-from pathlib import Path
 from typing import Optional
 
 from constants import MACHINE_LOCK_PATH
@@ -17,7 +16,7 @@ class MachineLock:
 
     @property
     def _lockfile(self):
-        return Path(MACHINE_LOCK_PATH)
+        return MACHINE_LOCK_PATH
 
     def _get(self) -> Optional[str]:
         """Get current lock owner, if any."""

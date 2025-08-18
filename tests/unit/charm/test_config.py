@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
@@ -7,7 +6,6 @@ import json
 import yaml
 from ops.testing import Relation, State, CharmEvents
 import pytest
-from unittest.mock import patch
 from config_builder import TOPOLOGY_INJECTOR_PROCESSOR_NAME
 
 
@@ -43,6 +41,7 @@ def test_config_topology_labels_processor(ctx, event, snap_mocks):
         in config["service"]["pipelines"]["profiles"]["processors"]
     )
 
+
 @pytest.mark.parametrize("ca", (False, True))
 @pytest.mark.parametrize("remote_tls", (False, True))
 def test_profiling_exporter_config(ctx, snap_mocks, remote_tls, ca, mock_ca_cert):
@@ -51,6 +50,7 @@ def test_profiling_exporter_config(ctx, snap_mocks, remote_tls, ca, mock_ca_cert
         endpoint="profiling",
         remote_app_data={
             "otlp_grpc_endpoint_url": json.dumps("grpc.server:1234"),
+            "insecure": json.dumps(not remote_tls),
         },
     )
     # AND a receive-ca-cert integration IF ca is True
@@ -63,11 +63,10 @@ def test_profiling_exporter_config(ctx, snap_mocks, remote_tls, ca, mock_ca_cert
         relations.add(receive_ca_relation)
 
     # WHEN we receive any event
-    with patch("config_manager._is_tls", return_value=remote_tls):
-        ctx.run(
-            ctx.on.update_status(),
-            state=State(relations=relations),
-        )
+    ctx.run(
+        ctx.on.update_status(),
+        state=State(relations=relations),
+    )
     # THEN the updated config contains the profling otlp exporter
     # AND if the endpoint is behind TLS, insecure is set to True
     config = get_updated_config(snap_mocks)

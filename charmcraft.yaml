@@ -33,7 +33,8 @@ requires:
     interface: certificate_transfer
     optional: true
     description: |
-      Obtain CA certificates from a certificates provider charm.
+      Require CA certificates from a certificates provider charm. 
+      This will enable the otel-ebpf-profiler-operator to push profiles over TLS to any charm exposing secured ingestion endpoints.
 
 provides: 
   cos-agent:

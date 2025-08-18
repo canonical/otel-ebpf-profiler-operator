@@ -5,6 +5,7 @@
 
 import logging
 import os
+from typing import List
 
 import cosl
 import ops
@@ -103,24 +104,26 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
         snap_management.cleanup_config()
 
     def _reconcile(self):
-        self._reconcile_certs()
+        changes = []
+        self._reconcile_certs(changes)
         self._reconcile_charm_tracing()
-        self._reconcile_config()
+        self._reconcile_config(changes)
+        if any(changes):
+            self._reload_snap()
 
-    def _reconcile_certs(self):
+    def _reconcile_certs(self, changes: List):
         """Configure certs, which are transferred from a certificate_transfer provider, on disk."""
         certificates = self._cert_transfer.get_all_certificates()
         if certificates:
             combined_ca = "".join(cert + "\n\n" for cert in sorted(certificates))
             current_combined_ca = CA_CERT_PATH.read_text() if CA_CERT_PATH.exists() else ""
             if current_combined_ca != combined_ca:
-                logger.debug("Updating CA file with a new set of certificates.")
+                logger.debug("Updating CA file")
                 CA_CERT_PATH.parent.mkdir(parents=True, exist_ok=True)
                 CA_CERT_PATH.write_text(combined_ca)
+                changes.append(True)
         else:
-            if CA_CERT_PATH.exists():
-                logger.debug("Deleting CA file since no certificates were transferred.")
-                CA_CERT_PATH.unlink()
+            CA_CERT_PATH.unlink(missing_ok=True)
 
     def _reconcile_charm_tracing(self):
         """Configure ops.tracing to send traces to a tracing backend."""
@@ -132,22 +135,23 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
             ca=ca_cert_path,
         )
 
-    def _reconcile_config(self):
+    def _reconcile_config(self, changes: List):
         """Configure the otel collector config."""
         config_manager = ConfigManager()
         config_manager.add_topology_labels(cosl.JujuTopology.from_charm(self).as_dict())
 
         # Profiling integration
-        profiling_endpoints = [ep.otlp_grpc for ep in self._profiling_requirer.get_endpoints()]
-        config_manager.add_profile_forwarding(profiling_endpoints)
+        config_manager.add_profile_forwarding(self._profiling_requirer.get_endpoints())
 
         # If the config file hash has changed, restart the snap
         config = config_manager.build()
         if snap_management.update_config(config.config, config.hash):
-            self.unit.status = MaintenanceStatus("Reloading snap config")
-            # this may raise; let the charm go to error state
-            snap_management.reload(self._snap_name, self._service_name)
+            changes.append(True)
 
+    def _reload_snap(self):
+        self.unit.status = MaintenanceStatus("Reloading snap config")
+        # this may raise; let the charm go to error state
+        snap_management.reload(self._snap_name, self._service_name)
         if not self.snap().services["otel-ebpf-profiler"]["active"]:
             # if at this point the snap isn't running, it could be because we've SIGHUPPED it too early
             # after installing it.

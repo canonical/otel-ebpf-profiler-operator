@@ -2,8 +2,6 @@
 
 import logging
 from collections import namedtuple
-import socket
-import ssl
 from typing import List, Dict
 from constants import CA_CERT_PATH
 
@@ -13,21 +11,6 @@ from config_builder import Component, ConfigBuilder
 logger = logging.getLogger(__name__)
 
 Config = namedtuple("Config", "config, hash")
-
-
-def _is_tls(endpoint: str):
-    host, port = endpoint.rsplit(":", 1)
-    port = int(port)
-    try:
-        ctx = ssl._create_unverified_context()
-        with ctx.wrap_socket(
-            socket.create_connection((host, port), timeout=3), server_hostname=host
-        ):
-            return True
-    except ssl.SSLError:
-        return False
-    except Exception:
-        return False
 
 
 class ConfigManager:
@@ -58,7 +41,7 @@ class ConfigManager:
         """Inject juju topology labels on the profile pipeline."""
         self._config.inject_topology_labels(topology_labels)
 
-    def add_profile_forwarding(self, endpoints: List[str]):
+    def add_profile_forwarding(self, endpoints: List):
         """Configure forwarding profiles to a profiling backend (Pyroscope, Otelcol)."""
         for idx, endpoint in enumerate(endpoints):
             self._config.add_component(
@@ -66,12 +49,12 @@ class ConfigManager:
                 # first component of this ID is the exporter type
                 f"otlp/profiling/{idx}",
                 {
-                    "endpoint": endpoint,
+                    "endpoint": endpoint.otlp_grpc,
                     # we need `insecure` as well as `insecure_skip_verify` because the endpoint
                     # we're receiving from pyroscope/otelcol is a grpc one and has no scheme prefix, and
                     # the client defaults to https unless we set `insecure=False`.
                     "tls": {
-                        "insecure": not _is_tls(endpoint),
+                        "insecure": endpoint.insecure,
                         "insecure_skip_verify": self._insecure_skip_verify,
                         **({"ca_file": str(CA_CERT_PATH)} if CA_CERT_PATH.exists() else {}),
                     },
