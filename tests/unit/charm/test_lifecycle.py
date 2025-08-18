@@ -5,9 +5,6 @@ import pytest
 from charm import OtelEbpfProfilerCharm
 from charms.operator_libs_linux.v2 import snap
 
-# autouse the snap_mocks fixture in this whole module
-pytestmark = pytest.mark.usefixtures("snap_mocks")
-
 
 @pytest.mark.parametrize(
     "event",

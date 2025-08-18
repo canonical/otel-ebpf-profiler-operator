@@ -7,6 +7,7 @@ from pytest import fixture
 logger = logging.getLogger("conftest")
 APP_NAME = "profiler"
 REPO_ROOT = Path(__file__).parent.parent.parent
+COS_CHANNEL = "2/edge"
 
 
 @fixture(scope="module")

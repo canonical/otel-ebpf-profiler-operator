@@ -2,12 +2,14 @@
 
 import hashlib
 import logging
-from typing import Any, Dict, List, Optional, Union
-from enum import Enum, unique
+from typing import Any, Dict, List, Literal, Optional, Union
+from enum import Enum, unique, IntEnum
 
 import yaml
 
 logger = logging.getLogger(__name__)
+
+TOPOLOGY_INJECTOR_PROCESSOR_NAME = "resource/profiling-topology-injector"
 
 
 def sha256(hashable: Union[str, bytes]) -> str:
@@ -25,6 +27,14 @@ def sha256(hashable: Union[str, bytes]) -> str:
     if isinstance(hashable, str):
         hashable = hashable.encode("utf-8")
     return hashlib.sha256(hashable).hexdigest()
+
+
+@unique
+class Port(IntEnum):
+    """Ports used by the Otel eBPF profiler."""
+
+    """The default port is 8888, but that would conflict with that of an Otel Collector running on the same machine."""
+    metrics = 9999
 
 
 @unique
@@ -103,6 +113,20 @@ class ConfigBuilder:
         self._add_exporter_insecure_skip_verify(self._exporter_skip_verify)
         return yaml.safe_dump(self._config)
 
+    def inject_topology_labels(self, topology_labels: dict):
+        """Inject jujutopology into the emitted profiles."""
+        self.add_component(
+            Component.processor,
+            TOPOLOGY_INJECTOR_PROCESSOR_NAME,
+            config={
+                "attributes": [
+                    {"action": "insert", "key": "juju_" + key, "value": value}
+                    for key, value in topology_labels.items()
+                ]
+            },
+            pipelines=["profiles"],
+        )
+
     def add_default_config(self):
         """Return the default config for OpenTelemetry Collector."""
         # The default config enables the profiling receiver, which is the ebpf profiler.
@@ -114,6 +138,23 @@ class ConfigBuilder:
                 "SamplesPerSecond": 19,
             },
             pipelines=["profiles"],
+        )
+        self._add_telemetry("logs", {"level": "WARN"})
+        # expose metrics on port 9999
+        self._add_telemetry(
+            "metrics",
+            {
+                "level": "normal",
+                "readers": [
+                    {
+                        "pull": {
+                            "exporter": {
+                                "prometheus": {"host": "0.0.0.0", "port": int(Port.metrics)}
+                            }
+                        }
+                    }
+                ],
+            },
         )
 
     def add_component(
@@ -191,3 +232,18 @@ class ConfigBuilder:
             self._config["exporters"][exporter].setdefault("tls", {}).setdefault(
                 "insecure_skip_verify", insecure_skip_verify
             )
+
+    def _add_telemetry(self, category: Literal["logs", "metrics", "traces"], telem_config: Dict):
+        """Add internal telemetry to the config.
+
+        Telemetry is enabled by adding it to the appropriate service section.
+
+        Args:
+            category: a string representing the pre-defined internal-telemetry types (logs, metrics, traces).
+            telem_config: a dict representing the telemetry config contents.
+
+        Returns:
+            Config since this is a builder method.
+        """
+        # https://opentelemetry.io/docs/collector/internal-telemetry
+        self._config["service"]["telemetry"][category] = telem_config
