@@ -1,5 +1,5 @@
-"""Profiling integration endpoint wrapper.
-"""
+"""Profiling integration endpoint wrapper."""
+
 import dataclasses
 import logging
 from typing import List
@@ -21,22 +21,26 @@ DEFAULT_ENDPOINT_NAME = "profiling"
 
 logger = logging.getLogger()
 
+
 class ProfilingAppDatabagModel(pydantic.BaseModel):
     """Application databag model for the profiling interface."""
+
     otlp_grpc_endpoint_url: str
     insecure: bool = False
 
 
 class ProfilingEndpointProvider:
     """Wraps a profiling provider endpoint."""
-    def __init__(self, relations:List[ops.Relation], app:ops.Application):
+
+    def __init__(self, relations: List[ops.Relation], app: ops.Application):
         self._relations = relations
         self._app = app
 
-    def publish_endpoint(self,
-                         otlp_grpc_endpoint:str,
-                         insecure:bool=False,
-                         ):
+    def publish_endpoint(
+        self,
+        otlp_grpc_endpoint: str,
+        insecure: bool = False,
+    ):
         """Publish profiling ingestion endpoints to all relations."""
         for relation in self._relations:
             try:
@@ -45,7 +49,7 @@ class ProfilingEndpointProvider:
                         otlp_grpc_endpoint_url=otlp_grpc_endpoint,
                         insecure=insecure,
                     ),
-                    self._app
+                    self._app,
                 )
             except ops.ModelError:
                 logger.debug("failed to validate app data; is the relation still being created?")
@@ -60,10 +64,11 @@ class _Endpoint:
 
 class ProfilingEndpointRequirer:
     """Wraps a profiling requirer endpoint."""
-    def __init__(self, relations:List[ops.Relation]):
+
+    def __init__(self, relations: List[ops.Relation]):
         self._relations = relations
 
-    def get_endpoints(self)->List[_Endpoint]:
+    def get_endpoints(self) -> List[_Endpoint]:
         """Obtain the profiling endpoints from all relations."""
         out = []
         for relation in self._relations:
@@ -75,9 +80,10 @@ class ProfilingEndpointRequirer:
             except pydantic.ValidationError:
                 logger.debug("failed to validate app data; is the relation still settling?")
                 continue
-            out.append(_Endpoint(
-                otlp_grpc=data.otlp_grpc_endpoint_url,
-                insecure=data.insecure,
-            ))
+            out.append(
+                _Endpoint(
+                    otlp_grpc=data.otlp_grpc_endpoint_url,
+                    insecure=data.insecure,
+                )
+            )
         return out
-
