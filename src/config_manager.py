@@ -7,6 +7,7 @@ from constants import CA_CERT_PATH
 
 
 from config_builder import Component, ConfigBuilder
+from charms.pyroscope_coordinator_k8s.v0.profiling import Endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ class ConfigManager:
         """Inject juju topology labels on the profile pipeline."""
         self._config.inject_topology_labels(topology_labels)
 
-    def add_profile_forwarding(self, endpoints: List):
+    def add_profile_forwarding(self, endpoints: List[Endpoint]):
         """Configure forwarding profiles to a profiling backend (Pyroscope, Otelcol)."""
         for idx, endpoint in enumerate(endpoints):
             self._config.add_component(
