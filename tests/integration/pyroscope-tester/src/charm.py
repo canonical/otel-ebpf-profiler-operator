@@ -47,7 +47,7 @@ class PyroscopeTesterCharm(ops.CharmBase):
         profiling = ProfilingEndpointProvider(
             self.model.relations.get("profiling", []), app=self.app
         )
-        profiling.publish_endpoint(f"{own_ip}:4040")
+        profiling.publish_endpoint(f"{own_ip}:4040", insecure=True)
 
         self.unit.status = ops.ActiveStatus(
             f"pyroscope {PYRO_VERSION} ready at http://{own_ip}:4040"
