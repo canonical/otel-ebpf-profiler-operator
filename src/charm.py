@@ -152,7 +152,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
             if err_msg := snap_management.check_status(self._snap_name, self._service_name):
                 e.add_status(ops.BlockedStatus(err_msg))
                 break
-            time.sleep(.1)  # this is usually enough to detect early startup failures
+            time.sleep(0.1)  # this is usually enough to detect early startup failures
 
         # assumption: if this is a testing env, the envvar won't be set
         machine_id = os.getenv("JUJU_MACHINE_ID", "<testing>")
