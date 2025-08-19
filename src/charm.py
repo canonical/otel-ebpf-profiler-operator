@@ -5,6 +5,7 @@
 
 import logging
 import os
+import time
 
 import cosl
 import ops
@@ -144,10 +145,14 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
 
     def _on_collect_unit_status(self, e: ops.CollectStatusEvent):
         # set to blocked if the snap isn't running for whatever reason.
-        # it might happen that the snap would take some time before it becomes "inactive".
+        # it might happen that the snap would take more time than this before it becomes "inactive",
+        # given that we probably just attempted to restart it.
         # if this happens, the charm will be set to blocked in the next processed event.
-        if err_msg := snap_management.check_status(self._snap_name, self._service_name):
-            e.add_status(ops.BlockedStatus(err_msg))
+        for _ in range(5):
+            if err_msg := snap_management.check_status(self._snap_name, self._service_name):
+                e.add_status(ops.BlockedStatus(err_msg))
+                break
+            time.sleep(.1)  # this is usually enough to detect early startup failures
 
         # assumption: if this is a testing env, the envvar won't be set
         machine_id = os.getenv("JUJU_MACHINE_ID", "<testing>")
