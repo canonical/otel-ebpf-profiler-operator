@@ -6,7 +6,9 @@
 import logging
 import os
 
-import cosl
+from cosl import JujuTopology
+from cosl.reconciler import observe_events, reconcilable_events_machine
+
 import ops
 import ops_tracing
 
@@ -32,7 +34,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
     def __init__(self, framework: ops.Framework):
         super().__init__(framework)
 
-        if not MachineLock(cosl.JujuTopology.from_charm(self).identifier).acquire():
+        if not MachineLock(JujuTopology.from_charm(self).identifier).acquire():
             self.unit.status = ops.BlockedStatus(
                 "Unable to run on this machine, is already being profiled by another instance."
             )
@@ -51,29 +53,13 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
 
         # we split events in three categories:
         # events on which we need to set up things
-        for setup_evt in (self.on.upgrade_charm, self.on.install):
-            framework.observe(setup_evt, self._on_setup_evt)
-
-        # events on which we need to remove things
-        for teardown_evt in (self.on.stop, self.on.remove):
-            framework.observe(teardown_evt, self._on_teardown_evt)
-
-        # events on which we may need to configure things
-        for maintenance_evt in self.on.events().values():
-            if not issubclass(maintenance_evt.event_type, ops.LifecycleEvent):
-                framework.observe(maintenance_evt, self._on_maintenance_evt)
+        observe_events(self, (ops.UpgradeCharmEvent, ops.InstallEvent), self._setup)
+        # events on which we need to tear down things
+        observe_events(self, (ops.StopEvent, ops.RemoveEvent), self._teardown)
+        # events on which we need to do regular config maintenance
+        observe_events(self, reconcilable_events_machine, self._reconcile)
 
         framework.observe(self.on.collect_unit_status, self._on_collect_unit_status)
-
-    # event handlers
-    def _on_setup_evt(self, _: ops.EventBase):
-        self._setup()
-
-    def _on_teardown_evt(self, _: ops.EventBase):
-        self._teardown()
-
-    def _on_maintenance_evt(self, _: ops.EventBase):
-        self._reconcile()
 
     # lifecycle managers
     def _setup(self):
@@ -116,7 +102,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
     def _reconcile_config(self):
         """Configure the otel collector config."""
         config_manager = ConfigManager()
-        config_manager.add_topology_labels(cosl.JujuTopology.from_charm(self).as_dict())
+        config_manager.add_topology_labels(JujuTopology.from_charm(self).as_dict())
 
         # Profiling integration
         profiling_endpoints = [ep.otlp_grpc for ep in self._profiling_requirer.get_endpoints()]
