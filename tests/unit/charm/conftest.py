@@ -22,6 +22,7 @@ def snap_mocks():
         patch.object(OtelEbpfProfilerCharm, "snap", MagicMock()) as snapmock,
         patch("charm.snap_management", MagicMock()) as snapmgmmock,
     ):
+        snapmgmmock.check_status.return_value = None
         yield SnapMocks(charm_snap=snapmock, snap_mgmt=snapmgmmock)
 
 

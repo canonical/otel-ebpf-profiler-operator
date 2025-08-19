@@ -143,12 +143,21 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
         return snap.SnapCache()[self._snap_name]
 
     def _on_collect_unit_status(self, e: ops.CollectStatusEvent):
-        # TODO: notify the user if there's no profiling relation
+        # set to blocked if the snap isn't running for whatever reason.
+        # it might happen that the snap would take some time before it becomes "inactive".
+        # if this happens, the charm will be set to blocked in the next processed event.
+        if err_msg := snap_management.check_status(self._snap_name, self._service_name):
+            e.add_status(ops.BlockedStatus(err_msg))
 
         # assumption: if this is a testing env, the envvar won't be set
         machine_id = os.getenv("JUJU_MACHINE_ID", "<testing>")
         # signal that this profiler instance owns an exclusive lock for profiling this machine
-        e.add_status(ops.ActiveStatus(f"profiling machine {machine_id}"))
+        happy_state_msg = f"profiling machine {machine_id}"
+
+        if not self._profiling_requirer.get_endpoints():
+            happy_state_msg += ", no profiling ingester/backend connected"
+
+        e.add_status(ops.ActiveStatus(happy_state_msg))
 
 
 if __name__ == "__main__":  # pragma: nocover
