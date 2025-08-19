@@ -5,7 +5,6 @@
 
 import logging
 import os
-from typing import List
 
 import cosl
 import ops
@@ -42,7 +41,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
                 "Unable to run on this machine, is already being profiled by another instance."
             )
             return
-
+        self._should_reload_snap = False
         self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations["profiling"])
         self._cos_agent = COSAgentProvider(
             self,
@@ -104,14 +103,13 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
         snap_management.cleanup_config()
 
     def _reconcile(self):
-        changes = []
-        self._reconcile_certs(changes)
+        self._reconcile_certs()
         self._reconcile_charm_tracing()
-        self._reconcile_config(changes)
-        if any(changes):
+        self._reconcile_config()
+        if self._should_reload_snap:
             self._reload_snap()
 
-    def _reconcile_certs(self, changes: List):
+    def _reconcile_certs(self):
         """Configure certs, which are transferred from a certificate_transfer provider, on disk."""
         certificates = self._cert_transfer.get_all_certificates()
         if certificates:
@@ -121,7 +119,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
                 logger.debug("Updating CA file")
                 CA_CERT_PATH.parent.mkdir(parents=True, exist_ok=True)
                 CA_CERT_PATH.write_text(combined_ca)
-                changes.append(True)
+                self._should_reload_snap = True
         else:
             CA_CERT_PATH.unlink(missing_ok=True)
 
@@ -135,7 +133,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
             ca=ca_cert_path,
         )
 
-    def _reconcile_config(self, changes: List):
+    def _reconcile_config(self):
         """Configure the otel collector config."""
         config_manager = ConfigManager()
         config_manager.add_topology_labels(cosl.JujuTopology.from_charm(self).as_dict())
@@ -146,7 +144,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
         # If the config file hash has changed, restart the snap
         config = config_manager.build()
         if snap_management.update_config(config.config, config.hash):
-            changes.append(True)
+            self._should_reload_snap = True
 
     def _reload_snap(self):
         self.unit.status = MaintenanceStatus("Reloading snap config")
