@@ -29,6 +29,12 @@ requires:
     interface: profiling
     optional: true
     description: Require a profiling backend (or an otel collector) to send the gathered profiles to.
+  receive-ca-cert:
+    interface: certificate_transfer
+    optional: true
+    description: |
+      Require CA certificates from a certificates provider charm. 
+      This will enable the otel-ebpf-profiler-operator to push profiles over TLS to any charm exposing secured ingestion endpoints.
 
 provides: 
   cos-agent:

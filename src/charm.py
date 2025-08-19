@@ -19,6 +19,10 @@ from config_manager import ConfigManager
 from config_builder import Port
 from ops.model import MaintenanceStatus
 from charms.grafana_agent.v0.cos_agent import COSAgentProvider, charm_tracing_config
+from charms.certificate_transfer_interface.v1.certificate_transfer import (
+    CertificateTransferRequires,
+)
+from constants import CA_CERT_PATH
 
 import snap_management
 from machine_lock import MachineLock
@@ -40,7 +44,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
                 "Unable to run on this machine, is already being profiled by another instance."
             )
             return
-
+        self._should_reload_snap = False
         self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations["profiling"])
         self._cos_agent = COSAgentProvider(
             self,
@@ -51,6 +55,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
             # cos_agent will instead scrape the snap's dumped logs from /var/log/**
             log_slots=None,
         )
+        self._cert_transfer = CertificateTransferRequires(self, "receive-ca-cert")
 
         # we split events in three categories:
         # events on which we need to set up things
@@ -85,14 +90,29 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
         snap_management.cleanup_config()
 
     def _reconcile(self):
+        self._reconcile_certs()
         self._reconcile_charm_tracing()
         self._reconcile_config()
+        if self._should_reload_snap:
+            self._reload_snap()
+
+    def _reconcile_certs(self):
+        """Configure certs, which are transferred from a certificate_transfer provider, on disk."""
+        certificates = self._cert_transfer.get_all_certificates()
+        if certificates:
+            combined_ca = "".join(cert + "\n\n" for cert in sorted(certificates))
+            current_combined_ca = CA_CERT_PATH.read_text() if CA_CERT_PATH.exists() else ""
+            if current_combined_ca != combined_ca:
+                logger.debug("Updating CA file")
+                CA_CERT_PATH.parent.mkdir(parents=True, exist_ok=True)
+                CA_CERT_PATH.write_text(combined_ca)
+                self._should_reload_snap = True
+        else:
+            CA_CERT_PATH.unlink(missing_ok=True)
 
     def _reconcile_charm_tracing(self):
         """Configure ops.tracing to send traces to a tracing backend."""
-        # FIXME: pass a CA cert path once TLS is supported
-        # https://github.com/canonical/otel-ebpf-profiler-operator/issues/2
-        endpoint, ca_cert_path = charm_tracing_config(self._cos_agent, None)
+        endpoint, ca_cert_path = charm_tracing_config(self._cos_agent, CA_CERT_PATH)
         if not endpoint:
             return
         ops_tracing.set_destination(
@@ -106,16 +126,17 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
         config_manager.add_topology_labels(JujuTopology.from_charm(self).as_dict())
 
         # Profiling integration
-        profiling_endpoints = [ep.otlp_grpc for ep in self._profiling_requirer.get_endpoints()]
-        config_manager.add_profile_forwarding(profiling_endpoints)
+        config_manager.add_profile_forwarding(self._profiling_requirer.get_endpoints())
 
         # If the config file hash has changed, restart the snap
         config = config_manager.build()
         if snap_management.update_config(config.config, config.hash):
-            self.unit.status = MaintenanceStatus("Reloading snap config")
-            # this may raise; let the charm go to error state
-            snap_management.reload(self._snap_name, self._service_name)
+            self._should_reload_snap = True
 
+    def _reload_snap(self):
+        self.unit.status = MaintenanceStatus("Reloading snap config")
+        # this may raise; let the charm go to error state
+        snap_management.reload(self._snap_name, self._service_name)
         if not self.snap().services["otel-ebpf-profiler"]["active"]:
             # if at this point the snap isn't running, it could be because we've SIGHUPPED it too early
             # after installing it.

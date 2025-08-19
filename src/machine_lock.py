@@ -1,6 +1,5 @@
 """Simple machine lock to ensure each juju machine can only be claimed by a single unit."""
 
-from pathlib import Path
 from typing import Optional
 
 from constants import MACHINE_LOCK_PATH
@@ -15,19 +14,14 @@ class MachineLock:
     def __init__(self, fingerprint: str):
         self._fingerprint = fingerprint
 
-    @property
-    def _lockfile(self):
-        return Path(MACHINE_LOCK_PATH)
-
     def _get(self) -> Optional[str]:
         """Get current lock owner, if any."""
-        file = self._lockfile
-        return file.read_text() if file.exists() else None
+        return MACHINE_LOCK_PATH.read_text() if MACHINE_LOCK_PATH.exists() else None
 
     def _set(self):
         """Set the lock owner to yourself."""
-        self._lockfile.parent.mkdir(parents=True, exist_ok=True)
-        self._lockfile.write_text(self._fingerprint)
+        MACHINE_LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+        MACHINE_LOCK_PATH.write_text(self._fingerprint)
 
     def acquire(self) -> bool:
         """Attempt to acquire machine lock, return whether the operation was successful.
