@@ -10,9 +10,9 @@ import platform
 import shlex
 import subprocess
 from pathlib import Path
-from typing import Dict, Optional, Set, Final, Union
+from typing import Dict, Optional, Set, Final
 
-from charms.operator_libs_linux.v2.snap import JSONAble, SnapState, SnapCache, Snap
+from charms.operator_libs_linux.v2.snap import JSONAble, SnapState, SnapCache
 
 logger = logging.getLogger(__name__)
 
