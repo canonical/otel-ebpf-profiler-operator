@@ -15,7 +15,7 @@ def get_updated_config(snap_mocks):
     return yaml.safe_load(call_args[0][0])
 
 
-@pytest.mark.parametrize("event", (CharmEvents.upgrade_charm(), CharmEvents.install()))
+@pytest.mark.parametrize("event", (CharmEvents.update_status(), CharmEvents.config_changed()))
 def test_config_topology_labels_processor(ctx, event, snap_mocks):
     # GIVEN the unit is leader
     # WHEN we receive any event
