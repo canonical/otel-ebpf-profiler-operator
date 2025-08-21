@@ -12,7 +12,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Optional, Set, Final
 
-from charms.operator_libs_linux.v2.snap import JSONAble
+from charms.operator_libs_linux.v2.snap import JSONAble, SnapCache, SnapState
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class SnapMap:
     snap_maps = {
         "otel-ebpf-profiler": {
             # (confinement, arch): revision
-            ("strict", "amd64"): 1,  # FIXME: put here actual revisions
+            ("classic", "amd64"): 2,  # revision 2 is on latest/edge at 20-09-2025
         },
     }
 
@@ -114,38 +114,27 @@ def install_snap(
         SnapInstallError: If there's an error during installation or configuration
         snap.SnapError: For errors from the underlying snap management library
     """
-    # FIXME: https://github.com/canonical/otel-ebpf-profiler-operator/issues/3
-    #  for now we have to install it manually
-    logger.info("downloading and installing snap (hack)...")
-    filename = "otel-ebpf-profiler_0.130.0_amd64.snap"
-    subprocess.run(
-        shlex.split(
-            f"wget https://github.com/michaeldmitry/otel-ebpf-profiler-snap/releases/download/0.130.0/{filename}"
-        )
-    )
-    subprocess.run(shlex.split(f"sudo snap install ./{filename} --dangerous --classic"))
-    return
+    # Check whether we have a spec in the SnapMap
+    try:
+        revision = SnapMap.get_revision(snap_name, classic=classic)
+    except KeyError as e:
+        raise SnapSpecError(
+            f"Failed to install snap {snap_name}: "
+            f"snap spec not found for arch={get_system_arch()} "
+            f"and confinement={'classic' if classic else 'strict'}"
+        ) from e
 
-    # # Check whether we have a spec in the SnapMap
-    # try:
-    #     revision = SnapMap.get_revision(snap_name, classic=classic)
-    # except KeyError as e:
-    #     raise SnapSpecError(
-    #         f"Failed to install snap {snap_name}: "
-    #         f"snap spec not found for arch={get_system_arch()} "
-    #         f"and confinement={'classic' if classic else 'strict'}"
-    #     ) from e
-    # # Install the Snap
-    # cache = snap_lib.SnapCache()
-    # snap = cache[snap_name]
-    # snap.ensure(state=snap_lib.SnapState.Present, revision=str(revision), classic=classic)
-    # logger.info(
-    #     f"{snap_name} snap has been installed at revision={revision}"
-    #     f" with confinement={'classic' if classic else 'strict'}"
-    # )
-    # if config:
-    #     snap.set(config)
-    # snap.hold()
+    # Install the Snap
+    cache = SnapCache()
+    snap = cache[snap_name]
+    snap.ensure(state=SnapState.Present, revision=str(revision), classic=classic)
+    logger.info(
+        f"{snap_name} snap has been installed at revision={revision}"
+        f" with confinement={'classic' if classic else 'strict'}"
+    )
+    if config:
+        snap.set(config)
+    snap.hold()
 
 
 def cleanup_config():
