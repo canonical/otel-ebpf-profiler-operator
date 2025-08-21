@@ -70,7 +70,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
     def _setup(self):
         """Install the snap."""
         self.unit.status = MaintenanceStatus(f"Installing {self._snap_name} snap")
-        snap_management.install_snap(self._snap_name)
+        snap_management.install_snap(self._snap_name, classic=True)
 
         # Start the snap
         self.unit.status = MaintenanceStatus(f"Starting {self._snap_name} snap")
