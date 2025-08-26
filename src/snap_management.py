@@ -178,3 +178,29 @@ def reload(snap_name: str, service_name: str):
     except subprocess.CalledProcessError:
         logger.error("error running: '%s'", cmd)
         raise ConfigReloadError("error reloading config")
+
+
+def check_status(snap_name: str, service_name: str) -> Optional[str]:
+    """Verify the status of the snap/service, return an error message or nothing if everything is OK."""
+    snap = SnapCache()[snap_name]
+
+    if snap.state is SnapState.Absent:
+        return f"{snap_name!r} snap is not installed. Check juju logs for any errors during installation."
+
+    service = snap.services[service_name]
+    if not service["active"]:
+        # common error scenario if the service isn't running: the user deployed to a machine
+        # without the right constraints
+        virt_type = subprocess.getoutput("systemd-detect-virt")
+        if virt_type == "lxc":
+            logger.error(
+                "It looks like you deployed this application to a host without the right capabilities. "
+                "To confirm: run `juju constraints <this-app-name>` and verify that "
+                "`virt-type=virtual-machine` is there. If not, this machine can't be instrumented with eBPF "
+                "and you need to redeploy using the right `--constraints`."
+            )
+            return "Snap error on startup: check host machine capabilities (virt-type). See juju logs for more."
+
+        return f"The otel-ebpf-profiler snap is not running. Check `sudo snap logs {snap_name}` for errors."
+
+    return None
