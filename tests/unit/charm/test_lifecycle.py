@@ -104,7 +104,7 @@ def test_profiling_related_status(ctx, event, snap_mocks):
                     "profiling",
                     remote_app_data={
                         "otlp_grpc_endpoint_url": json.dumps("foo.com"),
-                        # "insecure": json.dumps(True),
+                        "insecure": json.dumps(True),
                     },
                 )
             },

@@ -97,7 +97,7 @@ def test_check_status_snap_absent(caplog):
 
 
 def test_check_status_service_inactive(caplog):
-    # GIVEN the snap is absent
+    # GIVEN the snap service is inactive
     foo_snap = MagicMock()
     with patch("snap_management.SnapCache", return_value={"foo": foo_snap}):
         foo_snap.services = {"bar": {"active": False}}
