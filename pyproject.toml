@@ -9,7 +9,7 @@ dependencies = [
   "ops[tracing]",
   "pyyaml",   # required by config manager
   "urllib3",  # required by snap charmlib
-  "cosl",     # we use jujutopology
+  "cosl",     # we use jujutopology and reconciler
   "pydantic", # we use it in our charm libs
 ]
 
@@ -34,6 +34,9 @@ dev = [
 # Testing tools configuration
 [tool.coverage.run]
 branch = true
+omit = [
+  "lib/*",
+]
 
 [tool.coverage.report]
 show_missing = true
