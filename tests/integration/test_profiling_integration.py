@@ -1,6 +1,7 @@
 import pytest
 import jubilant
 from jubilant import Juju
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from conftest import (
     APP_NAME,
@@ -59,6 +60,7 @@ def test_integrate_profiling(juju: Juju):
     patch_otel_collector_log_level(juju)
 
 
+@retry(stop=stop_after_attempt(10), wait=wait_fixed(10))
 def test_profiles_are_pushed(juju: Juju):
     grep_filters = [
         '"otelcol.signal": "profiles"',
