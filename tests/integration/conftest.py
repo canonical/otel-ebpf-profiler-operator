@@ -25,6 +25,7 @@ def patch_update_status_interval(juju: Juju):
 
 def patch_otel_collector_log_level(juju: Juju, unit_no=0):
     # patch the collector's log level to INFO; we need this so that we can inspect the telemetry being dumped by the `debug` exporter
+    # TODO: avoid this patch if possible, cfr. https://github.com/canonical/opentelemetry-collector-operator/issues/83
     juju.ssh(
         f"{OTEL_COLLECTOR_APP_NAME}/{unit_no}",
         f"sudo sed -i 's/level: WARN/level: INFO/' /etc/otelcol/config.d/{OTEL_COLLECTOR_APP_NAME}_{unit_no}.yaml",

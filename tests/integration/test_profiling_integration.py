@@ -63,6 +63,7 @@ def test_integrate_profiling(juju: Juju):
 @retry(stop=stop_after_attempt(10), wait=wait_fixed(10))
 def test_profiles_are_pushed(juju: Juju):
     grep_filters = [
+        '"otelcol.component.kind": "exporter"',
         '"otelcol.signal": "profiles"',
         '"resource profiles"',
         '"sample records"',
