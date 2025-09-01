@@ -1,14 +1,18 @@
-import json
-import shlex
-import subprocess
-
 import pytest
 import jubilant
 from jubilant import Juju
 
-from conftest import APP_NAME
+from conftest import (
+    APP_NAME,
+    OTEL_COLLECTOR_APP_NAME,
+    COS_CHANNEL,
+    APP_BASE,
+    patch_otel_collector_log_level,
+)
+from assertions import assert_pattern_in_snap_logs
 
-PYRO_TESTER_APP_NAME = "pyroscope-tester"
+# patch the update-status-hook-interval because if the otel collector charm handles an event, it will regenerate its config and overwrite the config patch
+pytestmark = pytest.mark.usefixtures("patch_update_status_interval")
 
 
 @pytest.mark.setup
@@ -28,29 +32,37 @@ def test_profiler_running(juju: Juju):
 
 
 @pytest.mark.setup
-def test_deploy_pyroscope(juju: Juju, pyroscope_tester_charm):
-    juju.deploy(pyroscope_tester_charm, PYRO_TESTER_APP_NAME)
-    juju.wait(jubilant.all_active, timeout=5 * 60, error=jubilant.any_error, delay=10, successes=3)
+def test_deploy_otel_collector(juju: Juju):
+    juju.deploy(OTEL_COLLECTOR_APP_NAME, channel=COS_CHANNEL, base=APP_BASE)
 
 
 @pytest.mark.setup
-def test_integrate_pyroscope(juju: Juju):
-    juju.integrate(APP_NAME, PYRO_TESTER_APP_NAME)
-    juju.wait(jubilant.all_active, timeout=5 * 60, error=jubilant.any_error, delay=10, successes=3)
+def test_integrate_profiling(juju: Juju):
+    juju.integrate(f"{APP_NAME}:cos-agent", OTEL_COLLECTOR_APP_NAME)
+    juju.integrate(f"{APP_NAME}:profiling", OTEL_COLLECTOR_APP_NAME)
 
-
-def test_profiles_ingested(juju: Juju):
-    pyro_ip = list(juju.status().get_units(PYRO_TESTER_APP_NAME).values())[0].public_address
-    cmd = (
-        "curl -s --get --data-urlencode "
-        "'query=process_cpu:cpu:nanoseconds:cpu:nanoseconds{service_name=\"unknown_service\"}' "
-        '--data-urlencode "from=now-1h" '
-        f"http://{pyro_ip}:4040/pyroscope/render"
+    juju.wait(
+        lambda status: jubilant.all_blocked(status, OTEL_COLLECTOR_APP_NAME),
+        timeout=10 * 60,
+        delay=10,
+        successes=3,
     )
-    out = subprocess.run(shlex.split(cmd), text=True, capture_output=True)
-    flames = json.loads(out.stdout)
+    juju.wait(
+        lambda status: jubilant.all_active(status, APP_NAME),
+        timeout=10 * 60,
+        error=lambda status: jubilant.any_error(status, APP_NAME),
+        delay=10,
+        successes=6,
+    )
 
-    # equivalent to: jq -r '.flamebearer.levels[0] | add'"
-    tot_levels = sum(flames["flamebearer"]["levels"][0])
-    # if there's no data, this will be a zeroes array.
-    assert tot_levels > 0, f"No data in graph obtained by {cmd}"
+    # we need to patch the log level to capture the output of the debug exporter
+    patch_otel_collector_log_level(juju)
+
+
+def test_profiles_are_pushed(juju: Juju):
+    grep_filters = [
+        '"otelcol.signal": "profiles"',
+        '"resource profiles"',
+        '"sample records"',
+    ]
+    assert_pattern_in_snap_logs(juju, grep_filters)
