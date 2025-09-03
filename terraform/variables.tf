@@ -18,10 +18,8 @@ variable "config" {
 variable "constraints" {
   description = "String listing constraints for this application"
   type        = string
-  # FIXME: Passing an empty constraints value to the Juju Terraform provider currently
-  # causes the operation to fail due to https://github.com/juju/terraform-provider-juju/issues/344
-  # NB: without virt-type=virtual-machine, the charm won't function!
-  default = "arch=amd64 virt-type=virtual-machine"
+  # CAUTION: without virt-type=virtual-machine, the charm won't function!
+  default = "arch=amd64,virt-type=virtual-machine"
 }
 
 variable "model" {

@@ -1,6 +1,7 @@
 name: Terraform module tests
 
 on:
+    pull_request: # FIXME: do not merge; CI test only
     workflow_dispatch:
     schedule:
       - cron: "0 0 7,14,21 * *"
@@ -12,6 +13,9 @@ on:
 #              └────────────────── Start of the hour (minutes = 0).
 
 jobs:
-  - uses: ./_terraform-tests.yaml
+  terraform-tests:
+    name: Run terraform tests
+    uses: ./_terraform-tests.yaml
     with:
       provider: lxd
+    secrets: inherit

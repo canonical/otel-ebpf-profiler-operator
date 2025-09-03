@@ -1,7 +1,6 @@
 name: Terraform module tests
 
 on:
-  pull_request: # FIXME: do not merge; CI test only
   workflow_dispatch:
     inputs:
       charm-path:
