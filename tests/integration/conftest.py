@@ -4,6 +4,7 @@ from pathlib import Path
 from pytest_jubilant import pack
 from pytest import fixture
 from jubilant import Juju
+from tenacity import retry, stop_after_attempt, wait_fixed
 import yaml
 
 logger = logging.getLogger("conftest")
@@ -23,6 +24,7 @@ def patch_update_status_interval(juju: Juju):
     juju.model_config(reset="update-status-hook-interval")
 
 
+@retry(stop=stop_after_attempt(2), wait=wait_fixed(10))
 def patch_otel_collector_log_level(juju: Juju, unit_no=0):
     # patch the collector's log level to INFO; we need this so that we can inspect the telemetry being dumped by the `debug` exporter
     # TODO: avoid this patch if possible, cfr. https://github.com/canonical/opentelemetry-collector-operator/issues/83
