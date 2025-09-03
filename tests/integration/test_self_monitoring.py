@@ -37,7 +37,12 @@ def test_deploy_profiler(juju: Juju, charm):
 @pytest.mark.setup
 @when("an opentelemetry-collector charm is deployed")
 def test_deploy_otel_collector(juju: Juju):
-    juju.deploy(OTEL_COLLECTOR_APP_NAME, channel=COS_CHANNEL, base=APP_BASE)
+    # TODO: https://github.com/canonical/opentelemetry-collector-operator/issues/85
+    # Workaround — set workload sampling rate to 100%.
+    # The collector misclassifies charm traces as workload traces, so this ensures
+    # charm traces are not dropped.
+    config = {"tracing_sampling_rate_workload": 100}
+    juju.deploy(OTEL_COLLECTOR_APP_NAME, channel=COS_CHANNEL, base=APP_BASE, config=config)
 
 
 @pytest.mark.setup
@@ -87,3 +92,10 @@ def test_loki_alerts_are_aggregated(juju: Juju):
         f"find /var/lib/juju/agents/unit-{OTEL_COLLECTOR_APP_NAME}-0/charm/loki_alert_rules -type f",
     )
     assert APP_NAME in alert_files
+
+
+@then("charm traces are pushed to the collector")
+@retry(stop=stop_after_attempt(10), wait=wait_fixed(10))
+def test_charm_traces_are_pushed(juju: Juju):
+    grep_filters = ["ResourceTraces", f"service.name={APP_NAME}", "charm=otel-ebpf-profiler"]
+    assert_pattern_in_snap_logs(juju, grep_filters)
