@@ -5,10 +5,10 @@ output "app_name" {
 output "endpoints" {
   value = {
     # Requires
-    profiling                   = "profiling",
-    receive_ca_cert             = "receive-ca-cert",
+    profiling       = "profiling",
+    receive_ca_cert = "receive-ca-cert",
 
     # Provides
-    cos-agent                   = "cos-agent",
+    cos-agent = "cos-agent",
   }
 }
