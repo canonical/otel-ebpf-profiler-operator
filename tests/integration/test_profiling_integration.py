@@ -39,7 +39,8 @@ def test_deploy_otel_collector(juju: Juju):
 
 @pytest.mark.setup
 def test_integrate_profiling(juju: Juju):
-    juju.integrate(f"{APP_NAME}:cos-agent", OTEL_COLLECTOR_APP_NAME)
+    # to get otelcol deployed and assigned to a machine
+    juju.integrate(f"{APP_NAME}:juju-info", OTEL_COLLECTOR_APP_NAME)
     juju.integrate(f"{APP_NAME}:profiling", OTEL_COLLECTOR_APP_NAME)
 
     juju.wait(
