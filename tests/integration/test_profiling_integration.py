@@ -46,7 +46,7 @@ def test_integrate_profiling(juju: Juju):
         lambda status: jubilant.all_blocked(status, OTEL_COLLECTOR_APP_NAME),
         timeout=10 * 60,
         delay=10,
-        successes=3,
+        successes=6,
     )
     juju.wait(
         lambda status: jubilant.all_active(status, APP_NAME),
