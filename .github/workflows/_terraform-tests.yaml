@@ -1,7 +1,7 @@
 name: Terraform module tests
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       charm-path:
         description: "Charm root in this repository"
