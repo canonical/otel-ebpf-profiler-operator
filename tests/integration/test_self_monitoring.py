@@ -21,6 +21,18 @@ from assertions import assert_pattern_in_snap_logs
 pytestmark = pytest.mark.usefixtures("patch_update_status_interval")
 
 
+def _trigger_update_status_event(juju: Juju, unit_name: str):
+    # `jhack fire charm/0 update-status`
+    juju.ssh(
+        unit_name,
+        f"sudo /usr/bin/juju-exec -u {unit_name} "
+        "JUJU_DISPATCH_PATH=hooks/update-status "
+        f"JUJU_MODEL_NAME={juju.model} "
+        f"JUJU_UNIT_NAME={unit_name} "
+        f"/var/lib/juju/agents/unit-{unit_name.replace('/', '-')}/charm/dispatch",
+    )
+
+
 @pytest.mark.setup
 @given("an otel-ebpf-profiler charm is deployed")
 def test_deploy_profiler(juju: Juju, charm):
@@ -97,5 +109,7 @@ def test_loki_alerts_are_aggregated(juju: Juju):
 @then("charm traces are pushed to the collector")
 @retry(stop=stop_after_attempt(10), wait=wait_fixed(10))
 def test_charm_traces_are_pushed(juju: Juju):
+    # trigger an update-status hook on the charm to force the emission of charm traces
+    _trigger_update_status_event(juju, f"{APP_NAME}/0")
     grep_filters = ["ResourceTraces", f"service.name={APP_NAME}", "charm=otel-ebpf-profiler"]
     assert_pattern_in_snap_logs(juju, grep_filters)
