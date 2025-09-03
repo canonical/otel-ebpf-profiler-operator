@@ -11,8 +11,8 @@ on:
       provider:
         description: |
           The substrate to set up prior to running the test 
-          (a concierge preset, e.g. 'lxd' or 'k8s').
-        default: 'k8s'
+          (a concierge preset, e.g. 'machine' or 'microk8s').
+        default: 'microk8s'
         required: false
         type: string
 

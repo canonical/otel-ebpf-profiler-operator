@@ -19,5 +19,5 @@ jobs:
     name: Run terraform tests
     uses: ./.github/workflows/_terraform-tests.yaml
     with:
-      provider: lxd
+      provider: machine
     secrets: inherit
