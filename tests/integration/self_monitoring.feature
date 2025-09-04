@@ -7,3 +7,4 @@ Feature: Self-monitoring integration with OTel Collector
     Then logs are being scraped by the collector
     * metrics are being scraped by the collector
     * the collector aggregates the profiler's log alert rules
+    * charm traces are pushed to the collector

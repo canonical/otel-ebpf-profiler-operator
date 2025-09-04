@@ -21,6 +21,18 @@ from assertions import assert_pattern_in_snap_logs
 pytestmark = pytest.mark.usefixtures("patch_update_status_interval")
 
 
+def _trigger_update_status_event(juju: Juju, unit_name: str):
+    # `jhack fire charm/0 update-status`
+    juju.ssh(
+        unit_name,
+        f"sudo /usr/bin/juju-exec -u {unit_name} "
+        "JUJU_DISPATCH_PATH=hooks/update-status "
+        f"JUJU_MODEL_NAME={juju.model} "
+        f"JUJU_UNIT_NAME={unit_name} "
+        f"/var/lib/juju/agents/unit-{unit_name.replace('/', '-')}/charm/dispatch",
+    )
+
+
 @pytest.mark.setup
 @given("an otel-ebpf-profiler charm is deployed")
 def test_deploy_profiler(juju: Juju, charm):
@@ -37,7 +49,12 @@ def test_deploy_profiler(juju: Juju, charm):
 @pytest.mark.setup
 @when("an opentelemetry-collector charm is deployed")
 def test_deploy_otel_collector(juju: Juju):
-    juju.deploy(OTEL_COLLECTOR_APP_NAME, channel=COS_CHANNEL, base=APP_BASE)
+    # TODO: https://github.com/canonical/opentelemetry-collector-operator/issues/85
+    # Workaround — set workload sampling rate to 100%.
+    # The collector misclassifies charm traces as workload traces, so this ensures
+    # charm traces are not dropped.
+    config = {"tracing_sampling_rate_workload": 100}
+    juju.deploy(OTEL_COLLECTOR_APP_NAME, channel=COS_CHANNEL, base=APP_BASE, config=config)
 
 
 @pytest.mark.setup
@@ -87,3 +104,12 @@ def test_loki_alerts_are_aggregated(juju: Juju):
         f"find /var/lib/juju/agents/unit-{OTEL_COLLECTOR_APP_NAME}-0/charm/loki_alert_rules -type f",
     )
     assert APP_NAME in alert_files
+
+
+@then("charm traces are pushed to the collector")
+@retry(stop=stop_after_attempt(10), wait=wait_fixed(10))
+def test_charm_traces_are_pushed(juju: Juju):
+    # trigger an update-status hook on the charm to force the emission of charm traces
+    _trigger_update_status_event(juju, f"{APP_NAME}/0")
+    grep_filters = ["ResourceTraces", f"service.name={APP_NAME}", "charm=otel-ebpf-profiler"]
+    assert_pattern_in_snap_logs(juju, grep_filters)
