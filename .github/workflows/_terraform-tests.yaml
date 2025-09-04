@@ -8,6 +8,11 @@ on:
         default: '.'
         required: false
         type: string
+      charm-channel:
+        description: "Charm channel to deploy from with the terraform module"
+        default: '2/edge'
+        required: false
+        type: string
       provider:
         description: |
           The substrate to set up prior to running the test 
@@ -30,6 +35,7 @@ jobs:
           - name: Run tests
             run: |
               cd "${{ inputs.charm-path }}"
+              export CHARM_CHANNEL=${{ CHARM_CHANNEL }}
               uvx tox -e terraform
               
           

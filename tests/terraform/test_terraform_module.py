@@ -1,8 +1,12 @@
+import os
 import subprocess
 import jubilant
 import pytest
 
 from pytest_bdd import given, when, then
+
+
+CHARM_CHANNEL = os.getenv("CHARM_CHANNEL", "2/edge")
 
 
 @pytest.fixture
@@ -18,7 +22,7 @@ def test_terraform_apply(juju):
         [
             "terraform",
             "apply",
-            '-var="channel=2/edge"',
+            f'-var="channel={CHARM_CHANNEL}"',
             f'-var="model={juju.model}"',
             "-auto-approve",
         ]

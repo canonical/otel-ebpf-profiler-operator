@@ -20,4 +20,5 @@ jobs:
     uses: ./.github/workflows/_terraform-tests.yaml
     with:
       provider: machine
+      charm-channel: 2/edge
     secrets: inherit
