@@ -11,7 +11,8 @@ CHARM_CHANNEL = os.getenv("CHARM_CHANNEL", "2/edge")
 
 @pytest.fixture
 def juju():
-    yield from jubilant.temp_model()
+    with jubilant.temp_model() as tm:
+        yield tm
 
 
 @given("a machine model")
