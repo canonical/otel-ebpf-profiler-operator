@@ -17,7 +17,7 @@ on:
 jobs:
   terraform-tests:
     name: Run terraform tests
-    uses: ./.github/workflows/_terraform-tests.yaml
+    uses: ./.github/workflows/_terraform-tests-auto.yaml
     with:
       provider: machine
       charm-channel: 2/edge
