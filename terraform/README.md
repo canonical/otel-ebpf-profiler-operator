@@ -1,7 +1,7 @@
-# Terraform module for opentelemetry-collector-k8s
+# Terraform module for otel-ebpf-profiler
 
 
-This is a Terraform module facilitating the deployment of opentelemetry-collector charm, using the [Terraform juju provider](https://github.com/juju/terraform-provider-juju/). For more information, refer to the provider [documentation](https://registry.terraform.io/providers/juju/juju/latest/docs).
+This is a Terraform module facilitating the deployment of otel-ebpf-profiler charm, using the [Terraform juju provider](https://github.com/juju/terraform-provider-juju/). For more information, refer to the provider [documentation](https://registry.terraform.io/providers/juju/juju/latest/docs).
 
 
 ## Requirements
