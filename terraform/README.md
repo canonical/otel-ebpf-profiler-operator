@@ -26,11 +26,10 @@ The module offers the following configurable inputs:
 ### Outputs
 Upon applied, the module exports the following outputs:
 
-| Name | Description |
-| - | - |
-| `app_name`|  Application name |
-| `provides`|  Map of `provides` endpoints |
-| `requires`|  Map of `requires` endpoints |
+| Name        | Description |
+|-------------| - |
+| `app_name`  |  Application name |
+| `endpoints` |  Map of `provides|requires` endpoints |
 
 ## Usage
 

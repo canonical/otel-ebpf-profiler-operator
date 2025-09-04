@@ -1,32 +1,30 @@
 import subprocess
 import jubilant
+import pytest
 
 from pytest_bdd import given, when, then
 
 
+@pytest.fixture
+def juju():
+    yield from jubilant.temp_model()
+
+
 @given("a machine model")
-def test_setup_model():
-    jubilant.Juju().add_model("test-terraform")
-
-
 @when("you run terraform apply using the provided module")
-def test_terraform_apply():
+def test_terraform_apply(juju):
     subprocess.run(["terraform", "init"])
     subprocess.run(
         [
             "terraform",
             "apply",
             '-var="channel=2/edge"',
-            '-var="model=test-terraform"',
+            f'-var="model={juju.model}"',
             "-auto-approve",
         ]
     )
 
 
 @then("the otel-ebpf-profiler charm is deployed and active")
-def test_active():
-    jubilant.Juju(model="test-terraform").wait(jubilant.all_active, timeout=60 * 10)
-
-
-def test_teardown_model():
-    jubilant.Juju().destroy_model("test-terraform")
+def test_active(juju):
+    juju.wait(jubilant.all_active, timeout=60 * 10)
