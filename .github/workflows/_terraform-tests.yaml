@@ -30,6 +30,6 @@ jobs:
           - name: Run tests
             run: |
               cd "${{ inputs.charm-path }}"
-              tox -e terraform
+              uvx tox -e terraform
               
           
