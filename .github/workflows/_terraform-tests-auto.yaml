@@ -50,12 +50,14 @@ jobs:
               juju add-model $MODEL
               
               cd ${{ inputs.terraform-module-path }}
-              
+  
               terraform init
               terraform apply \
                 -var="channel=${{ inputs.charm-channel }}" \
                 -var="model=$MODEL" \
-                ${{ inputs.terraform-args || 'main.tf' }} \ 
+                # we don't quite need to pass main.tf here, but if we leave it empty the 
+                # resulting command contains a quoted space character and fails to parse... (?!?!)
+                ${{ inputs.terraform-args || '' }} \ 
                 -auto-approve
               
               # assert all gets to active; eventually

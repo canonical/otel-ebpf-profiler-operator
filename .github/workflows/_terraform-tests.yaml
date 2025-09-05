@@ -35,7 +35,7 @@ jobs:
           - name: Run tests
             run: |
               cd "${{ inputs.charm-path }}"
-              export CHARM_CHANNEL=${{ CHARM_CHANNEL }}
+              export CHARM_CHANNEL=${{ inputs.charm-channel }}
               uvx tox -e terraform
               
           
