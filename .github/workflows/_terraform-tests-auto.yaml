@@ -54,11 +54,8 @@ jobs:
               terraform init
               terraform apply \
                 -var="channel=${{ inputs.charm-channel }}" \
-                -var="model=$MODEL" \
-                # we don't quite need to pass main.tf here, but if we leave it empty the 
-                # resulting command contains a quoted space character and fails to parse... (?!?!)
-                ${{ inputs.terraform-args || '' }} \ 
-                -auto-approve
+                -var="model=$MODEL" ${{ inputs.terraform-args || '' }} -auto-approve 
+                
               
               # assert all gets to active; eventually
               uv run --with jubilant python -c "import jubilant as j; \ 
