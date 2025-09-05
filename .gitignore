@@ -10,3 +10,6 @@ __pycache__/
 cos-tool*
 version
 *.logs/
+*.hcl
+.terraform
+*.tfstate*
