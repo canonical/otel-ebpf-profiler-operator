@@ -19,7 +19,7 @@ variable "constraints" {
   description = "String listing constraints for this application"
   type        = string
   # CAUTION: without virt-type=virtual-machine, the charm won't function!
-  default = "arch=amd64,virt-type=virtual-machine"
+  default = "arch=amd64 virt-type=virtual-machine"
 }
 
 variable "model" {
