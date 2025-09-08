@@ -2,7 +2,7 @@ import pytest
 import jubilant
 from jubilant import Juju
 
-from conftest import APP_NAME
+from conftest import APP_NAME, get_system_arch
 
 PYRO_TESTER_APP_NAME = "pyroscope-tester"
 UNINVITED_GUEST = APP_NAME + "guest"
@@ -10,7 +10,9 @@ UNINVITED_GUEST = APP_NAME + "guest"
 
 @pytest.mark.setup
 def test_deploy(juju: Juju, charm):
-    juju.deploy(charm, APP_NAME, constraints={"virt-type": "virtual-machine"})
+    juju.deploy(
+        charm, APP_NAME, constraints={"virt-type": "virtual-machine", "arch": get_system_arch()}
+    )
     juju.wait(jubilant.all_active, timeout=5 * 60, error=jubilant.any_error, delay=10, successes=3)
 
 

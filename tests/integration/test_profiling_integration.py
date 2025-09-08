@@ -8,6 +8,7 @@ from conftest import (
     OTEL_COLLECTOR_APP_NAME,
     COS_CHANNEL,
     APP_BASE,
+    get_system_arch,
     patch_otel_collector_log_level,
 )
 from assertions import assert_pattern_in_snap_logs
@@ -20,7 +21,9 @@ pytestmark = pytest.mark.usefixtures("patch_update_status_interval")
 @pytest.mark.setup
 @given("an ebpf profiler charm is deployed on a juju virtual machine")
 def test_deploy(juju: Juju, charm):
-    juju.deploy(charm, APP_NAME, constraints={"virt-type": "virtual-machine"})
+    juju.deploy(
+        charm, APP_NAME, constraints={"virt-type": "virtual-machine", "arch": get_system_arch()}
+    )
     juju.wait(jubilant.all_active, timeout=5 * 60, error=jubilant.any_error, delay=10, successes=3)
 
 
