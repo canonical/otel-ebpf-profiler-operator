@@ -1,6 +1,6 @@
 import pytest
 import jubilant
-from jubilant import Juju, all_active, any_error
+from jubilant import Juju, all_active, any_error, all_blocked
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from conftest import (
@@ -41,7 +41,7 @@ def test_deploy_otel_collector(juju: Juju):
     # to get otelcol deployed and assigned to a machine
     juju.integrate(f"{APP_NAME}:juju-info", OTEL_COLLECTOR_APP_NAME)
     juju.wait(
-        lambda status: all_active(status, OTEL_COLLECTOR_APP_NAME),
+        lambda status: all_blocked(status, OTEL_COLLECTOR_APP_NAME),
         timeout=10 * 60,
         delay=10,
         successes=3,
@@ -63,7 +63,13 @@ def test_deploy_ssc(juju: Juju):
 def test_integrate_ssc_collector(juju: Juju):
     juju.integrate(f"{OTEL_COLLECTOR_APP_NAME}:receive-server-cert", SSC_APP_NAME)
     juju.wait(
-        lambda status: all_active(status, OTEL_COLLECTOR_APP_NAME, SSC_APP_NAME),
+        lambda status: all_blocked(status, OTEL_COLLECTOR_APP_NAME),
+        timeout=10 * 60,
+        delay=10,
+        successes=3,
+    )
+    juju.wait(
+        lambda status: all_active(status, SSC_APP_NAME),
         timeout=10 * 60,
         delay=10,
         successes=3,
