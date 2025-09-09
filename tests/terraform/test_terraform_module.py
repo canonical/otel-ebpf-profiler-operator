@@ -1,0 +1,35 @@
+import os
+import subprocess
+import jubilant
+import pytest
+
+from pytest_bdd import given, when, then
+
+
+CHARM_CHANNEL = os.getenv("CHARM_CHANNEL", "2/edge")
+
+
+@pytest.fixture
+def juju():
+    with jubilant.temp_model() as tm:
+        yield tm
+
+
+@given("a machine model")
+@when("you run terraform apply using the provided module")
+def test_terraform_apply(juju):
+    subprocess.run(["terraform", "init"])
+    subprocess.run(
+        [
+            "terraform",
+            "apply",
+            f'-var="channel={CHARM_CHANNEL}"',
+            f'-var="model={juju.model}"',
+            "-auto-approve",
+        ]
+    )
+
+
+@then("the otel-ebpf-profiler charm is deployed and active")
+def test_active(juju):
+    juju.wait(jubilant.all_active, timeout=60 * 10)
