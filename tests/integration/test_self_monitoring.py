@@ -2,48 +2,35 @@
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-from pathlib import Path
-from typing import List
 import pytest
 import jubilant
 from jubilant import Juju
 from tenacity import retry, stop_after_attempt, wait_fixed
-import yaml
-from conftest import APP_NAME, COS_CHANNEL
+from conftest import (
+    APP_NAME,
+    COS_CHANNEL,
+    patch_otel_collector_log_level,
+    OTEL_COLLECTOR_APP_NAME,
+    APP_BASE,
+)
 from pytest_bdd import given, when, then
-
-OTEL_COLLECTOR_APP_NAME = "opentelemetry-collector"
-METADATA = yaml.safe_load(Path("./charmcraft.yaml").read_text())
-# get the charm os base without the trailing `:architecture` part
-APP_BASE = next(iter(METADATA["platforms"])).split(":")[0]
+from assertions import assert_pattern_in_snap_logs
 
 
-@pytest.fixture(scope="module", autouse=True)
-def patch_update_status_interval(juju: Juju):
-    # patch the update-status-hook-interval because if the otel collector charm handles an event, it will regenerate its config and overwrite the config patch
-    juju.model_config({"update-status-hook-interval": "1h"})
-    yield
-    juju.model_config(reset="update-status-hook-interval")
+# patch the update-status-hook-interval because if the otel collector charm handles an event, it will regenerate its config and overwrite the config patch
+pytestmark = pytest.mark.usefixtures("patch_update_status_interval")
 
 
-def _patch_otel_collector_log_level(juju: Juju, unit_no=0):
-    # patch the collector's log level to INFO; we need this so that we can inspect the telemetry being dumped by the `debug` exporter
+def _trigger_update_status_event(juju: Juju, unit_name: str):
+    # `jhack fire charm/0 update-status`
     juju.ssh(
-        f"{OTEL_COLLECTOR_APP_NAME}/{unit_no}",
-        f"sudo sed -i 's/level: WARN/level: INFO/' /etc/otelcol/config.d/{OTEL_COLLECTOR_APP_NAME}_{unit_no}.yaml",
+        unit_name,
+        f"sudo /usr/bin/juju-exec -u {unit_name} "
+        "JUJU_DISPATCH_PATH=hooks/update-status "
+        f"JUJU_MODEL_NAME={juju.model} "
+        f"JUJU_UNIT_NAME={unit_name} "
+        f"/var/lib/juju/agents/unit-{unit_name.replace('/', '-')}/charm/dispatch",
     )
-    # restart the snap for the updates to take place
-    juju.ssh(f"{OTEL_COLLECTOR_APP_NAME}/{unit_no}", "sudo snap restart opentelemetry-collector")
-
-
-def assert_pattern_in_snap_logs(juju: Juju, grep_filters: List[str]):
-    cmd = (
-        "sudo snap logs opentelemetry-collector -n=all"
-        + " | "
-        + " | ".join([f"grep {p}" for p in grep_filters])
-    )
-    otelcol_logs = juju.ssh(f"{OTEL_COLLECTOR_APP_NAME}/0", command=cmd)
-    assert otelcol_logs, f"Filters {grep_filters} not found in the {OTEL_COLLECTOR_APP_NAME} logs"
 
 
 @pytest.mark.setup
@@ -61,8 +48,13 @@ def test_deploy_profiler(juju: Juju, charm):
 
 @pytest.mark.setup
 @when("an opentelemetry-collector charm is deployed")
-def test_deploy_and_integrate_otel_collector(juju: Juju):
-    juju.deploy(OTEL_COLLECTOR_APP_NAME, channel=COS_CHANNEL, base=APP_BASE)
+def test_deploy_otel_collector(juju: Juju):
+    # TODO: https://github.com/canonical/opentelemetry-collector-operator/issues/85
+    # Workaround — set workload sampling rate to 100%.
+    # The collector misclassifies charm traces as workload traces, so this ensures
+    # charm traces are not dropped.
+    config = {"tracing_sampling_rate_workload": 100}
+    juju.deploy(OTEL_COLLECTOR_APP_NAME, channel=COS_CHANNEL, base=APP_BASE, config=config)
 
 
 @pytest.mark.setup
@@ -84,7 +76,7 @@ def test_integrate_cos_agent(juju: Juju):
     )
 
     # we need to patch the log level to capture the output of the debug exporter
-    _patch_otel_collector_log_level(juju)
+    patch_otel_collector_log_level(juju)
 
 
 @then("logs are being scraped by the collector")
@@ -112,3 +104,12 @@ def test_loki_alerts_are_aggregated(juju: Juju):
         f"find /var/lib/juju/agents/unit-{OTEL_COLLECTOR_APP_NAME}-0/charm/loki_alert_rules -type f",
     )
     assert APP_NAME in alert_files
+
+
+@then("charm traces are pushed to the collector")
+@retry(stop=stop_after_attempt(10), wait=wait_fixed(10))
+def test_charm_traces_are_pushed(juju: Juju):
+    # trigger an update-status hook on the charm to force the emission of charm traces
+    _trigger_update_status_event(juju, f"{APP_NAME}/0")
+    grep_filters = ["ResourceTraces", f"service.name={APP_NAME}", "charm=otel-ebpf-profiler"]
+    assert_pattern_in_snap_logs(juju, grep_filters)
