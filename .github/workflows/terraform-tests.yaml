@@ -1,9 +1,6 @@
 name: Terraform module tests
 
 on:
-    pull_request: # FIXME: do not merge; CI test only
-      branches:
-      - main
     workflow_dispatch:
     schedule:
       - cron: "0 0 7,14,21 * *"
