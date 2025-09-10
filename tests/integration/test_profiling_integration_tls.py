@@ -1,6 +1,6 @@
 import pytest
 import jubilant
-from jubilant import Juju, all_blocked
+from jubilant import Juju, all_active, any_error, all_blocked
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from conftest import (
@@ -13,6 +13,7 @@ from conftest import (
 from assertions import assert_pattern_in_snap_logs
 from pytest_bdd import given, when, then
 
+SSC_APP_NAME = "ssc"
 # patch the update-status-hook-interval because if the otel collector charm handles an event, it will regenerate its config and overwrite the config patch
 pytestmark = pytest.mark.usefixtures("patch_update_status_interval")
 
@@ -26,7 +27,6 @@ def test_deploy(juju: Juju, charm):
 
 def test_profiler_running(juju: Juju):
     unit_name = list(juju.status().apps[APP_NAME].units.keys())[0]
-
     out = juju.ssh(
         unit_name,
         'sudo snap services otel-ebpf-profiler | awk \'$2=="enabled" && $3=="active"\'',
@@ -48,10 +48,50 @@ def test_deploy_otel_collector(juju: Juju):
     )
 
 
+@pytest.mark.setup
+@given("a certificates provider charm is deployed")
+def test_deploy_ssc(juju: Juju):
+    juju.deploy("self-signed-certificates", SSC_APP_NAME)
+    juju.wait(
+        lambda status: all_active(status, SSC_APP_NAME),
+        timeout=10 * 60,
+    )
+
+
+@pytest.mark.setup
+@given("the certificates provider charm is integrated with the collector to enable TLS")
+def test_integrate_ssc_collector(juju: Juju):
+    juju.integrate(f"{OTEL_COLLECTOR_APP_NAME}:receive-server-cert", SSC_APP_NAME)
+    juju.wait(
+        lambda status: all_blocked(status, OTEL_COLLECTOR_APP_NAME),
+        timeout=10 * 60,
+        delay=10,
+        successes=3,
+    )
+    juju.wait(
+        lambda status: all_active(status, SSC_APP_NAME),
+        timeout=10 * 60,
+        delay=10,
+        successes=3,
+    )
+
+
+@pytest.mark.setup
+@given("the certificates provider charm is integrated with the profiler to provide the CA")
+def test_integrate_ssc_profiler(juju: Juju):
+    juju.integrate(f"{APP_NAME}:receive-ca-cert", SSC_APP_NAME)
+    juju.wait(
+        lambda status: all_active(status, APP_NAME, SSC_APP_NAME),
+        timeout=10 * 60,
+        error=lambda status: any_error(status, APP_NAME),
+        delay=10,
+        successes=3,
+    )
+
+
 @when("the profiler is integrated with the collector over profiling")
 def test_integrate_profiling(juju: Juju):
     juju.integrate(f"{APP_NAME}:profiling", OTEL_COLLECTOR_APP_NAME)
-
     juju.wait(
         lambda status: jubilant.all_blocked(status, OTEL_COLLECTOR_APP_NAME),
         timeout=10 * 60,
@@ -71,7 +111,7 @@ def test_integrate_profiling(juju: Juju):
 
 
 @retry(stop=stop_after_attempt(10), wait=wait_fixed(10))
-@then("system-wide profiles are successfully pushed to the collector")
+@then("system-wide profiles are successfully pushed to the collector over TLS")
 def test_profiles_are_pushed(juju: Juju):
     grep_filters = [
         '"otelcol.component.kind": "exporter"',

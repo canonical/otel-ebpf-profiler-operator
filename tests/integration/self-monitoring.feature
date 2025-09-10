@@ -1,4 +1,4 @@
-Feature: Self-monitoring integration with OTel Collector
+Feature: self-monitoring
 
   Scenario: eBPF profiler self-monitoring data is scraped and aggregated
     Given an otel-ebpf-profiler charm is deployed
