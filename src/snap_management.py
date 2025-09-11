@@ -47,8 +47,8 @@ class SnapMap:
     snap_maps = {
         "otel-ebpf-profiler": {
             # (confinement, arch): revision
-            ("classic", "amd64"): 3,  # 0.133.0
-            ("classic", "arm64"): 4,  # 0.133.0
+            ("classic", "amd64"): 6,  # 0.135.0
+            ("classic", "arm64"): 5,  # 0.135.0
         },
     }
 

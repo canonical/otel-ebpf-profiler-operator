@@ -9,8 +9,7 @@ on:
 jobs:
   pull-request:
     name: PR
-    # FIXME: point at v1
-    uses: canonical/observability/.github/workflows/charm-pull-request.yaml@OPENG-3328
+    uses: canonical/observability/.github/workflows/charm-pull-request.yaml@v1
     secrets: inherit
     with:
       provider: machine
