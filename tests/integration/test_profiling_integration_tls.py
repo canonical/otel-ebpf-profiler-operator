@@ -9,6 +9,7 @@ from conftest import (
     COS_CHANNEL,
     APP_BASE,
     patch_otel_collector_log_level,
+    get_system_arch,
 )
 from assertions import assert_pattern_in_snap_logs
 from pytest_bdd import given, when, then
@@ -37,7 +38,12 @@ def test_profiler_running(juju: Juju):
 @pytest.mark.setup
 @given("an otel collector charm is deployed on the same machine")
 def test_deploy_otel_collector(juju: Juju):
-    juju.deploy(OTEL_COLLECTOR_APP_NAME, channel=COS_CHANNEL, base=APP_BASE)
+    juju.deploy(
+        OTEL_COLLECTOR_APP_NAME,
+        channel=COS_CHANNEL,
+        base=APP_BASE,
+        constraints={"arch": get_system_arch()},
+    )
     # to get otelcol deployed and assigned to a machine
     juju.integrate(f"{APP_NAME}:juju-info", OTEL_COLLECTOR_APP_NAME)
     juju.wait(
@@ -51,7 +57,7 @@ def test_deploy_otel_collector(juju: Juju):
 @pytest.mark.setup
 @given("a certificates provider charm is deployed")
 def test_deploy_ssc(juju: Juju):
-    juju.deploy("self-signed-certificates", SSC_APP_NAME)
+    juju.deploy("self-signed-certificates", SSC_APP_NAME, constraints={"arch": get_system_arch()})
     juju.wait(
         lambda status: all_active(status, SSC_APP_NAME),
         timeout=10 * 60,

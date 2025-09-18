@@ -19,7 +19,7 @@ def test_deploy(juju: Juju, charm):
 @pytest.mark.setup
 def test_deploy_second_profiler_same_machine(juju: Juju, charm):
     machine_id = list(juju.status().apps[APP_NAME].units.values())[0].machine
-    juju.deploy(charm, UNINVITED_GUEST, to=machine_id)
+    juju.deploy(charm, UNINVITED_GUEST, to=machine_id, constraints={"arch": get_system_arch()})
     juju.wait(
         lambda status: jubilant.all_blocked(status, UNINVITED_GUEST),
         timeout=5 * 60,

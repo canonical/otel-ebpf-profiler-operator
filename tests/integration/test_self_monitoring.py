@@ -63,7 +63,11 @@ def test_deploy_otel_collector(juju: Juju):
 @pytest.mark.setup
 @when("integrated with the otel-ebpf-profiler over cos-agent")
 def test_integrate_cos_agent(juju: Juju):
-    juju.integrate(APP_NAME + ":cos-agent", OTEL_COLLECTOR_APP_NAME + ":cos-agent")
+    juju.integrate(
+        APP_NAME + ":cos-agent",
+        OTEL_COLLECTOR_APP_NAME + ":cos-agent",
+        constraints={"arch": get_system_arch()},
+    )
     juju.wait(
         lambda status: jubilant.all_blocked(status, OTEL_COLLECTOR_APP_NAME),
         timeout=10 * 60,
