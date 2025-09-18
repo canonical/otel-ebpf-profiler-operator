@@ -52,6 +52,11 @@ def patch_otel_collector_log_level(juju: Juju, unit_no=0):
     juju.ssh(f"{OTEL_COLLECTOR_APP_NAME}/{unit_no}", "sudo snap restart opentelemetry-collector")
 
 
+@fixture(scope="module", autouse=True)
+def patch_model_constraints_architecture(juju: Juju):
+    juju.cli(("set-model-constraints", f"arch={get_system_arch()}"))
+
+
 @fixture(scope="module")
 def charm():
     """Charm used for integration testing."""

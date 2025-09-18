@@ -9,7 +9,6 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 from conftest import (
     APP_NAME,
     COS_CHANNEL,
-    get_system_arch,
     patch_otel_collector_log_level,
     OTEL_COLLECTOR_APP_NAME,
     APP_BASE,
@@ -37,9 +36,7 @@ def _trigger_update_status_event(juju: Juju, unit_name: str):
 @pytest.mark.setup
 @given("an otel-ebpf-profiler charm is deployed")
 def test_deploy_profiler(juju: Juju, charm):
-    juju.deploy(
-        charm, APP_NAME, constraints={"virt-type": "virtual-machine", "arch": get_system_arch()}
-    )
+    juju.deploy(charm, APP_NAME, constraints={"virt-type": "virtual-machine"})
     juju.wait(
         lambda status: jubilant.all_active(status, APP_NAME),
         timeout=10 * 60,
@@ -66,7 +63,6 @@ def test_integrate_cos_agent(juju: Juju):
     juju.integrate(
         APP_NAME + ":cos-agent",
         OTEL_COLLECTOR_APP_NAME + ":cos-agent",
-        constraints={"arch": get_system_arch()},
     )
     juju.wait(
         lambda status: jubilant.all_blocked(status, OTEL_COLLECTOR_APP_NAME),
