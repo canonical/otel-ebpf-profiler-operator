@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+import platform
 from pytest_jubilant import pack
 from pytest import fixture
 from jubilant import Juju
@@ -15,6 +16,21 @@ APP_NAME = "profiler"
 APP_BASE = next(iter(METADATA["platforms"])).split(":")[0]
 OTEL_COLLECTOR_APP_NAME = "opentelemetry-collector"
 COS_CHANNEL = "2/edge"
+
+
+def get_system_arch() -> str:
+    """Returns the architecture of this machine, mapping some values to amd64 or arm64.
+
+    If platform is x86_64 or amd64, it returns amd64.
+    If platform is aarch64, arm64, armv8b, or armv8l, it returns arm64.
+    """
+    arch = platform.machine().lower()
+    if arch in ["x86_64", "amd64"]:
+        arch = "amd64"
+    elif arch in ["aarch64", "arm64", "armv8b", "armv8l"]:
+        arch = "arm64"
+    # else: keep arch as is
+    return arch
 
 
 @fixture(scope="module")
@@ -36,6 +52,11 @@ def patch_otel_collector_log_level(juju: Juju, unit_no=0):
     juju.ssh(f"{OTEL_COLLECTOR_APP_NAME}/{unit_no}", "sudo snap restart opentelemetry-collector")
 
 
+@fixture(scope="module", autouse=True)
+def patch_model_constraints_architecture(juju: Juju):
+    juju.cli("set-model-constraints", f"arch={get_system_arch()}")
+
+
 @fixture(scope="module")
 def charm():
     """Charm used for integration testing."""
@@ -47,13 +68,3 @@ def charm():
         return charm
     logger.info(f"packing from {REPO_ROOT}")
     return pack(REPO_ROOT)
-
-
-@fixture
-def pyroscope_tester_charm():
-    # simple caching for local testing
-    itest_root = REPO_ROOT / "tests" / "integration"
-    path = itest_root / "pyroscope-tester" / "pyroscope-tester_amd64.charm"
-    if path.exists():
-        return path.resolve()
-    return pack(itest_root / "pyroscope-tester")
