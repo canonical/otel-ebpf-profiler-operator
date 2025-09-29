@@ -1,12 +1,14 @@
-import os
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+import pathlib
 import subprocess
 import jubilant
 import pytest
 
 from pytest_bdd import given, when, then
 
-
-CHARM_CHANNEL = os.getenv("CHARM_CHANNEL", "2/edge")
+TESTS_DIR = pathlib.Path(__file__).parent.resolve()
 
 
 @pytest.fixture
@@ -18,15 +20,10 @@ def juju():
 @given("a machine model")
 @when("you run terraform apply using the provided module")
 def test_terraform_apply(juju):
-    subprocess.run(["terraform", "init"])
-    subprocess.run(
-        [
-            "terraform",
-            "apply",
-            f'-var="channel={CHARM_CHANNEL}"',
-            f'-var="model={juju.model}"',
-            "-auto-approve",
-        ]
+    subprocess.check_call(["terraform", f"-chdir={TESTS_DIR}", "init"])
+    subprocess.check_call(
+        f'terraform -chdir={TESTS_DIR} apply -var="model={juju.model}" -auto-approve',
+        shell=True,
     )
 
 
