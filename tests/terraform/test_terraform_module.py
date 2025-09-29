@@ -9,7 +9,7 @@ import pytest
 from pytest_bdd import given, when, then
 
 
-TESTS_DIR = Path(__file__).parent.resolve()
+THIS_DIRECTORY = Path(__file__).parent.resolve()
 CHARM_CHANNEL = os.getenv("CHARM_CHANNEL", "2/edge")
 
 
@@ -22,10 +22,10 @@ def juju():
 @given("a machine model")
 @when("you run terraform apply using the provided module")
 def test_terraform_apply(juju):
-    subprocess.run(shlex.split(f"terraform -chdir={TESTS_DIR} init"), check=True)
+    subprocess.run(shlex.split(f"terraform -chdir={THIS_DIRECTORY} init"), check=True)
     subprocess.run(
         shlex.split(
-            f'terraform -chdir={TESTS_DIR} apply -var="channel={CHARM_CHANNEL}" '
+            f'terraform -chdir={THIS_DIRECTORY} apply -var="channel={CHARM_CHANNEL}" '
             f'-var="model={juju.model}" -auto-approve'
         ),
         check=True,
