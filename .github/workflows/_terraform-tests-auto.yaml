@@ -34,7 +34,7 @@ on:
 
 jobs:
     tf-tests:
-        runs-on: [self-hosted]
+        runs-on: [self-hosted, amd64]
         name: Terraform tests
         steps:
           - name: Checkout

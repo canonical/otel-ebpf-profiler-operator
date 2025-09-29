@@ -1,5 +1,5 @@
-module "pyroscope" {
+module "otel-ebpf-profiler" {
   source  = "../../terraform"
   model   = var.model
-  channel = "2/edge"
+  channel = var.channel
 }
