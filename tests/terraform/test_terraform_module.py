@@ -1,15 +1,19 @@
 import os
+import shlex
 import subprocess
+from pathlib import Path
+
 import jubilant
 import pytest
 
 from pytest_bdd import given, when, then
 
 
+THIS_DIRECTORY = Path(__file__).parent.resolve()
 CHARM_CHANNEL = os.getenv("CHARM_CHANNEL", "2/edge")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def juju():
     with jubilant.temp_model() as tm:
         yield tm
@@ -18,18 +22,16 @@ def juju():
 @given("a machine model")
 @when("you run terraform apply using the provided module")
 def test_terraform_apply(juju):
-    subprocess.run(["terraform", "init"])
+    subprocess.run(shlex.split(f"terraform -chdir={THIS_DIRECTORY} init"), check=True)
     subprocess.run(
-        [
-            "terraform",
-            "apply",
-            f'-var="channel={CHARM_CHANNEL}"',
-            f'-var="model={juju.model}"',
-            "-auto-approve",
-        ]
+        shlex.split(
+            f'terraform -chdir={THIS_DIRECTORY} apply -var="channel={CHARM_CHANNEL}" '
+            f'-var="model={juju.model}" -auto-approve'
+        ),
+        check=True,
     )
 
 
 @then("the otel-ebpf-profiler charm is deployed and active")
 def test_active(juju):
-    juju.wait(jubilant.all_active, timeout=60 * 10)
+    juju.wait(lambda status: jubilant.all_active(status, "otel-ebpf-profiler"), timeout=60 * 10)
