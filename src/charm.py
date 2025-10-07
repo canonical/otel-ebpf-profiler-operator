@@ -48,8 +48,7 @@ class OtelEbpfProfilerCharm(ops.CharmBase):
         self._profiling_requirer = ProfilingEndpointRequirer(self.model.relations["profiling"])
         self._cos_agent = COSAgentProvider(
             self,
-            # FIXME: uncomment when https://github.com/canonical/opentelemetry-collector-operator/issues/61 is fixed
-            # tracing_protocols=["otlp_http"],
+            tracing_protocols=["otlp_http"],
             metrics_endpoints=[{"path": "/metrics", "port": int(Port.metrics)}],
             # since otel-ebpf-profiler is a classic snap, we don't need to specify `log_slots`.
             # cos_agent will instead scrape the snap's dumped logs from /var/log/**

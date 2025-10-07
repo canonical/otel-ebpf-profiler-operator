@@ -26,7 +26,7 @@ def get_system_arch() -> str:
     If platform is x86_64 or amd64, it returns amd64.
     If platform is aarch64, arm64, armv8b, or armv8l, it returns arm64.
     """
-    arch = platform.processor()
+    arch = platform.machine().lower()
     if arch in ["x86_64", "amd64"]:
         arch = "amd64"
     elif arch in ["aarch64", "arm64", "armv8b", "armv8l"]:
@@ -47,7 +47,8 @@ class SnapMap:
     snap_maps = {
         "otel-ebpf-profiler": {
             # (confinement, arch): revision
-            ("classic", "amd64"): 2,  # revision 2 is on latest/edge at 20-09-2025
+            ("classic", "amd64"): 6,  # 0.135.0
+            ("classic", "arm64"): 5,  # 0.135.0
         },
     }
 
