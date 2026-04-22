@@ -55,13 +55,13 @@ For example, if you want to deploy `otel-ebpf-profiler` to a machine with a diff
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5 |
-| <a name="requirement_juju"></a> [juju](#requirement\_juju) | >= 0.15.0 |
+| <a name="requirement_juju"></a> [juju](#requirement\_juju) | ~> 1.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_juju"></a> [juju](#provider\_juju) | >= 0.15.0 |
+| <a name="provider_juju"></a> [juju](#provider\_juju) | ~> 1.0 |
 
 ## Modules
 
@@ -75,7 +75,7 @@ No modules.
 | <a name="input_channel"></a> [channel](#input\_channel) | Channel that the charm is deployed from | `string` | n/a | yes |
 | <a name="input_config"></a> [config](#input\_config) | Map of the charm configuration options | `map(string)` | `{}` | no |
 | <a name="input_constraints"></a> [constraints](#input\_constraints) | String listing constraints for this application | `string` | `"arch=amd64 virt-type=virtual-machine"` | no |
-| <a name="input_model"></a> [model](#input\_model) | Reference to an existing model resource or data source for the model to deploy to | `string` | n/a | yes |
+| <a name="input_model_uuid"></a> [model\_uuid](#input\_model\_uuid) | Reference to an existing model resource or data source for the model to deploy to | `string` | n/a | yes |
 | <a name="input_revision"></a> [revision](#input\_revision) | Revision number of the charm | `number` | `null` | no |
 | <a name="input_storage_directives"></a> [storage\_directives](#input\_storage\_directives) | Map of storage used by the application, which defaults to 1 GB, allocated by Juju | `map(string)` | `{}` | no |
 | <a name="input_trust"></a> [trust](#input\_trust) | Whether this application is trusted to control the cluster | `bool` | `false` | no |
