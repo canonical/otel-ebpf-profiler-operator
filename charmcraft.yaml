@@ -9,7 +9,33 @@ type: charm
 
 summary: A whole-system, cross-language profiler for Linux via eBPF.
 description: |
-  A whole-system, cross-language profiler for Linux via eBPF.  
+  OTel eBPF Profiler is a Juju charm that deploys and manages the OpenTelemetry eBPF
+  Profiler on Linux machine models. It is an optional complement to the Canonical
+  Observability Stack (COS):
+  https://documentation.ubuntu.com/observability
+
+  The OpenTelemetry eBPF Profiler is a whole-system, cross-language continuous profiler
+  for Linux. It uses eBPF to gather CPU profiling data from all running processes
+  without requiring any instrumentation or language-specific agents, supporting Go,
+  Rust, C/C++, Java, PHP, Python, Ruby, Node.js, and more.
+
+  This is a machine charm: it deploys the otel-ebpf-profiler snap as a classic snap on
+  bare-metal or virtual machines, and forwards the collected profiles to a Pyroscope
+  backend or an OpenTelemetry Collector.
+
+  Key features:
+
+  - Whole-system profiling via eBPF: captures CPU profiles across all processes on the
+    host with no code changes or per-language instrumentation required.
+  - Cross-language support: profiles Go, Rust, Zig, C/C++, Java (Hotspot JVM), Python,
+    Ruby, PHP, Node.js, Perl, Erlang, .NET, and other runtimes running on the same host.
+  - Forwards profiling data to a Pyroscope backend via the profiling relation, or to an
+    OpenTelemetry Collector.
+  - Self-monitoring: exposes Prometheus metrics and forwards logs via the cos-agent
+    relation to Grafana Agent or an OpenTelemetry Collector.
+  - TLS support: accepts CA certificates via the receive-ca-cert relation to push
+    profiles securely to TLS-enabled backends.
+  - Only one instance per machine is allowed, enforced at charm level.
 
 links:
   documentation: https://discourse.charmhub.io/t/18805
