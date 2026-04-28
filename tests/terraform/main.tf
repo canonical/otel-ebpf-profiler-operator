@@ -1,5 +1,5 @@
 module "otel-ebpf-profiler" {
-  source  = "../../terraform"
-  model   = var.model
-  channel = var.channel
+  source     = "../../terraform"
+  model_uuid = var.model_uuid
+  channel    = var.channel
 }
