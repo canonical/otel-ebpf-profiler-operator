@@ -13,3 +13,5 @@ version
 *.hcl
 .terraform
 *.tfstate*
+# Terraform
+**/.terraform.lock.hcl

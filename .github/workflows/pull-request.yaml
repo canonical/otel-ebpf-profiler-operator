@@ -9,14 +9,14 @@ on:
 jobs:
   pull-request:
     name: PR
-    uses: canonical/observability/.github/workflows/charm-pull-request.yaml@v1
+    uses: canonical/observability/.github/workflows/charm-pull-request.yaml@v2
     secrets: inherit
     with:
       provider: machine
 
   terraform-deploy-tests:
     name: Run terraform deployment tests
-    uses: canonical/observability/.github/workflows/run-tox-environment.yaml@v1
+    uses: canonical/observability/.github/workflows/run-tox-environment.yaml@v2
     with:
       tox-env-name: terraform
       run-on: "self-hosted-linux-amd64-noble-medium"
