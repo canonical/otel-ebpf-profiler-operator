@@ -33,7 +33,7 @@ def _trigger_update_status_event(juju: Juju, unit_name: str):
     )
 
 
-@pytest.mark.setup
+@pytest.mark.juju_setup
 @given("an otel-ebpf-profiler charm is deployed")
 def test_deploy_profiler(juju: Juju, charm):
     juju.deploy(charm, APP_NAME, constraints={"virt-type": "virtual-machine"})
@@ -46,7 +46,7 @@ def test_deploy_profiler(juju: Juju, charm):
     )
 
 
-@pytest.mark.setup
+@pytest.mark.juju_setup
 @when("an opentelemetry-collector charm is deployed")
 def test_deploy_otel_collector(juju: Juju):
     # TODO: https://github.com/canonical/opentelemetry-collector-operator/issues/85
@@ -57,7 +57,7 @@ def test_deploy_otel_collector(juju: Juju):
     juju.deploy(OTEL_COLLECTOR_APP_NAME, channel=COS_CHANNEL, base=APP_BASE, config=config)
 
 
-@pytest.mark.setup
+@pytest.mark.juju_setup
 @when("integrated with the otel-ebpf-profiler over cos-agent")
 def test_integrate_cos_agent(juju: Juju):
     juju.integrate(

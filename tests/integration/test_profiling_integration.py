@@ -17,7 +17,7 @@ from pytest_bdd import given, when, then
 pytestmark = pytest.mark.usefixtures("patch_update_status_interval")
 
 
-@pytest.mark.setup
+@pytest.mark.juju_setup
 @given("an ebpf profiler charm is deployed on a juju virtual machine")
 def test_deploy(juju: Juju, charm):
     juju.deploy(charm, APP_NAME, constraints={"virt-type": "virtual-machine"})
@@ -34,7 +34,7 @@ def test_profiler_running(juju: Juju):
     assert out
 
 
-@pytest.mark.setup
+@pytest.mark.juju_setup
 @given("an otel collector charm is deployed on the same machine")
 def test_deploy_otel_collector(juju: Juju):
     juju.deploy(
