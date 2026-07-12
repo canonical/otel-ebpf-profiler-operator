@@ -18,7 +18,7 @@ SSC_APP_NAME = "ssc"
 pytestmark = pytest.mark.usefixtures("patch_update_status_interval")
 
 
-@pytest.mark.setup
+@pytest.mark.juju_setup
 @given("an ebpf profiler charm is deployed on a juju virtual machine")
 def test_deploy(juju: Juju, charm):
     juju.deploy(charm, APP_NAME, constraints={"virt-type": "virtual-machine"})
@@ -34,7 +34,7 @@ def test_profiler_running(juju: Juju):
     assert out
 
 
-@pytest.mark.setup
+@pytest.mark.juju_setup
 @given("an otel collector charm is deployed on the same machine")
 def test_deploy_otel_collector(juju: Juju):
     juju.deploy(
@@ -52,7 +52,7 @@ def test_deploy_otel_collector(juju: Juju):
     )
 
 
-@pytest.mark.setup
+@pytest.mark.juju_setup
 @given("a certificates provider charm is deployed")
 def test_deploy_ssc(juju: Juju):
     juju.deploy("self-signed-certificates", SSC_APP_NAME)
@@ -62,7 +62,7 @@ def test_deploy_ssc(juju: Juju):
     )
 
 
-@pytest.mark.setup
+@pytest.mark.juju_setup
 @given("the certificates provider charm is integrated with the collector to enable TLS")
 def test_integrate_ssc_collector(juju: Juju):
     juju.integrate(f"{OTEL_COLLECTOR_APP_NAME}:receive-server-cert", SSC_APP_NAME)
@@ -80,7 +80,7 @@ def test_integrate_ssc_collector(juju: Juju):
     )
 
 
-@pytest.mark.setup
+@pytest.mark.juju_setup
 @given("the certificates provider charm is integrated with the profiler to provide the CA")
 def test_integrate_ssc_profiler(juju: Juju):
     juju.integrate(f"{APP_NAME}:receive-ca-cert", SSC_APP_NAME)

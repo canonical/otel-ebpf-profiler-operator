@@ -24,7 +24,7 @@ dev = [
   "pytest",
   "coverage[toml]",
   # Integration
-  "pytest-jubilant",
+  "pytest-jubilant>=2,<3",
   "ops[testing]",
   "jubilant",
   "tenacity",

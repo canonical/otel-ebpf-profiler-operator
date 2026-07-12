@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 import platform
-from pytest_jubilant import pack
+import subprocess
 from pytest import fixture
 from jubilant import Juju
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -67,4 +67,32 @@ def charm():
         logger.info(f"using existing charm from {REPO_ROOT}")
         return charm
     logger.info(f"packing from {REPO_ROOT}")
-    return pack(REPO_ROOT)
+    return _pack(REPO_ROOT)
+
+
+def _pack(root: Path | str = "./", platform: str | None = None) -> Path:
+    """Pack a local charm and return it."""
+    cmd = ["charmcraft", "pack", "--project-dir", root]
+    if platform:
+        cmd.extend(["--platform", platform])
+    proc = subprocess.run(cmd, check=True, capture_output=True, text=True)
+    # stderr looks like:
+    # > charmcraft pack
+    # Packed tempo-coordinator-k8s_ubuntu@24.04-amd64.charm
+    # Packed tempo-coordinator-k8s_ubuntu@22.04-amd64.charm
+    packed_charms = [
+        line.split()[1]
+        for line in proc.stderr.strip().splitlines()
+        if line.startswith("Packed")
+    ]
+    if not packed_charms:
+        raise ValueError(
+            "Unable to get packed charm(s)!"
+            f" ({cmd!r} completed with {proc.returncode=}, {proc.stdout=}, {proc.stderr=})"
+        )
+    if len(packed_charms) > 1:
+        raise ValueError(
+            "This charm supports multiple platforms. "
+            "Pass a `platform` argument to control which charm you're getting instead."
+        )
+    return Path(packed_charms[0]).resolve()

@@ -8,13 +8,13 @@ PYRO_TESTER_APP_NAME = "pyroscope-tester"
 UNINVITED_GUEST = APP_NAME + "guest"
 
 
-@pytest.mark.setup
+@pytest.mark.juju_setup
 def test_deploy(juju: Juju, charm):
     juju.deploy(charm, APP_NAME, constraints={"virt-type": "virtual-machine"})
     juju.wait(jubilant.all_active, timeout=5 * 60, error=jubilant.any_error, delay=10, successes=3)
 
 
-@pytest.mark.setup
+@pytest.mark.juju_setup
 def test_deploy_second_profiler_same_machine(juju: Juju, charm):
     machine_id = list(juju.status().apps[APP_NAME].units.values())[0].machine
     juju.deploy(charm, UNINVITED_GUEST, to=machine_id)
@@ -33,6 +33,6 @@ def test_blocked_status(juju: Juju):
     assert "is already being profiled" in app_status.message
 
 
-@pytest.mark.teardown
+@pytest.mark.juju_teardown
 def test_cleanup(juju):
     juju.remove_application(UNINVITED_GUEST, force=True)
